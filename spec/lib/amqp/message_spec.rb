@@ -12,7 +12,7 @@ describe Evrone::Common::AMQP::Message do
     subject { message.to_json }
     it { should eq "{\"foo\":\"bar\"}" }
 
-    context "with existring 'to_json' method" do
+    context "with existing 'to_json' method" do
       before do
         def body.to_json
           "to_json method"

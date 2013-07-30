@@ -36,6 +36,33 @@ module Evrone
           true
         end
 
+        def subscribe(exch_name, queue_name, options = {}, &block)
+          logger.info "[amqp] subscribing to #{exch_name}"
+
+          bind_options = {
+            routing_key: options[:routing_key]
+          }
+
+          x = declare_exchange exch_name,  options[:exchange]
+          q = declare_exchange queue_name, options[:queue]
+          q.bind(x, bind_options)
+          logger.info "[amqp] bind queue '#{q.name}' to '#{x.name}'"
+
+          begin
+            loop do
+              delivery_info, _, payload = q.pop(ack: true)
+              if payload
+                logger.info "[amqp] receive ##{delivery_info.delivery_tag} #{payload.inspect}"
+                yield payload, delivery_info
+                channel.ack delivery_info.delivery_tag, false
+                logger.info "[amqp] commit ##{delivery_info.delivery_tag}"
+              else
+                sleep config.pool_timeout
+              end
+            end
+          end
+        end
+
         def conn_info
           "#{@conn.user}:#{@conn.host}:#{@conn.port}/#{@conn.vhost}" if @conn
         end
@@ -63,6 +90,20 @@ module Evrone
             type = options.delete(:type) || config.default_exchange_type
             options = config.default_exchange_options.merge(options)
             ::Bunny::Exchange.new(@channel, type, name, options)
+          end
+
+          def declare_queue(name, options = {})
+            assert_connection_opened
+
+            options = config.default_queue_options.merge(options || {})
+
+            if options[:auto_delete] && options[:exclusive]
+              options.merge!(durable:     false,
+                             auto_delete: true)
+            end
+
+            name ||= AMQ::Protocol::EMPTY_STRING
+            channel.queue name, options
           end
 
           def assert_connection_opened
