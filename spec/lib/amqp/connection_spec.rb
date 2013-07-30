@@ -92,16 +92,16 @@ describe Evrone::Common::AMQP::Connection do
           collected << received
         end
       end
-      sleep 2
+      sleep(run_timeout_from_env || 2)
       th
     }
 
     it "should receive message" do
       worker
       publish
-      sleep 3
-      delete_queue(queue)    rescue Bunny::NotFound
-      delete_exchange(exch)  rescue Bunny::NotFound
+      sleep(run_timeout_from_env || 3)
+      delete_queue(queue)
+      delete_exchange(exch)
       shutdown
       timeout { worker.join }
       expect(collected).to include(message)
@@ -112,7 +112,7 @@ describe Evrone::Common::AMQP::Connection do
       before  { worker }
       after   {
         delete_queue(queue)
-        delete_exchange(exch) rescue Bunny::NotFound
+        delete_exchange(exch)
       }
 
       context "type" do
@@ -179,7 +179,13 @@ describe Evrone::Common::AMQP::Connection do
     end
 
     def timeout(&block)
-      Timeout.timeout(3, &block)
+      Timeout.timeout(run_timeout_from_env || 3, &block)
+    end
+
+    def run_timeout_from_env
+      if i =  ENV['TEST_RUN_TIMEOUT']
+        i.to_i
+      end
     end
   end
 end

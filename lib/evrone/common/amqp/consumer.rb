@@ -29,10 +29,20 @@ module Evrone
             configuration.queue.options = options
           end
 
-          def consume
-            connection.open
-            
+          def routing_key(name)
+            configuration.routing_key = name
           end
+
+          def consume
+            raise MissingExchangeName unless configuration.exchange.name
+            connection.open.subscribe(configuration.exchange.name,
+                                      configuration.queue_name,
+                                      routing_key: routing_key,
+                                      exchange: configuration.exchange.options,
+                                      queue: configuration.queue.options)
+          end
+
+          class MissingExchangeName < Exception ; end
         end
       end
     end

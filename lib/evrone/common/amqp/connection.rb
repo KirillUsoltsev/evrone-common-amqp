@@ -112,11 +112,6 @@ module Evrone
             self.class.shutdown?
           end
 
-          def log_shutdown_event
-            logger.info '[amqp] receive shutdown event'
-            true
-          end
-
           def log_received_message(delivery_info, payload)
             logger.info "[amqp] receive ##{delivery_info.delivery_tag} #{payload.inspect}"
             status = yield
@@ -126,8 +121,11 @@ module Evrone
 
           def declare_exchange(name, options = nil)
             assert_connection_open
+            logger.debug "[amqp] declaring exchange #{name.inspect} #{options.inspect}"
             type, options = get_exchange_type_and_options(options || {})
-            ::Bunny::Exchange.new(channel, type, name, options)
+            x = ::Bunny::Exchange.new(channel, type, name, options)
+            logger.debug "[amqp] declated exchnage successful #{x.inspect[0..80]}"
+            x
           end
 
           def declare_queue(name, options = nil)
@@ -135,7 +133,10 @@ module Evrone
 
             options = get_queue_options(options || {})
             name  ||= AMQ::Protocol::EMPTY_STRING
-            channel.queue name, options
+            logger.debug "[amqp] declaring queue #{name.inspect} #{options.inspect}"
+            q = channel.queue name, options
+            logger.debug "[amqp] declated queue successful #{q.inspect[0..80]}"
+            q
           end
 
           def get_exchange_type_and_options(options)
