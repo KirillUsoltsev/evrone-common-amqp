@@ -153,14 +153,6 @@ describe Evrone::Common::AMQP::Connection do
         delete_exchange(exch)
       }
 
-      context "routing_key" do
-        subject { queue.routing_key }
-        #it { should be_nil }
-
-        context "when pass nil as queue name" do
-        end
-      end
-
       context "options" do
         context "by default" do
           its(:durable?)     { should be_true }
