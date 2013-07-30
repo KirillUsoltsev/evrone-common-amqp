@@ -133,12 +133,8 @@ module Evrone
             [type, options]
           end
 
-          def get_queue_options(queue)
-            options = config.default_queue_options.merge(options || {})
-            if options[:auto_delete] || options[:exclusive]
-              options.merge!(durable: false, auto_delete: true)
-            end
-            options
+          def get_queue_options(options)
+            config.default_queue_options.merge(options || {})
           end
 
           def extract_bind_options!(options)

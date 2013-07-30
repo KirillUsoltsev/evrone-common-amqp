@@ -12,7 +12,7 @@ module Evrone
         end
 
         def reset!
-          @url                   = ENV['AMQP_URL']
+          @url                   = nil
           @logger                = ::Logger.new(STDOUT)
           @default_exchange_type = :topic
           @pool_timeout          = 0.1

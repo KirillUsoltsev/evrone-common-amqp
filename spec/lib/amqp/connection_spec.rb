@@ -52,12 +52,12 @@ describe Evrone::Common::AMQP::Connection do
           its(:auto_delete?) { should be_false }
         end
 
-        context "when durable: true" do
+        context "when pass durable: true to options" do
           let(:options)      { { durable: false } }
           its(:durable?)     { should be_false }
         end
 
-        context "when auto_delete: true" do
+        context "when pass auto_delete: true to options" do
           let(:options)      { { auto_delete: true } }
           its(:auto_delete?) { should be_true }
         end
@@ -68,7 +68,7 @@ describe Evrone::Common::AMQP::Connection do
           its(:type) { should eq :topic }
         end
 
-        context "fanout" do
+        context "when pass type: :fanout to options" do
           let(:options) { { type: :fanout } }
           its(:type) { should eq :fanout }
         end
@@ -87,22 +87,102 @@ describe Evrone::Common::AMQP::Connection do
     let(:publish)    { conn.publish exch_name, message   }
     let(:shutdown)   { described_class.shutdown }
     let(:worker)     {
-      Thread.new do
+      th = Thread.new do
         conn.subscribe(exch_name, queue_name, options) do |received|
           collected << received
         end
       end
+      sleep 1
+      th
     }
 
     it "should receive message" do
       worker
-      sleep 1
       publish
       sleep 2
       delete_queue(queue) and delete_exchange(exch)
       shutdown
       timeout { worker.join }
       expect(collected).to include(message)
+    end
+
+    context "exchange" do
+      subject { exch }
+      before  { worker }
+      after   {
+        delete_queue(queue)
+        delete_exchange(exch) rescue Bunny::NotFound
+      }
+
+      context "type" do
+        subject { exch.type }
+
+        context "by default" do
+          it { should eq :topic }
+        end
+
+        context "when pass type: :fanout to exchange options" do
+          let(:options) { { exchange: { type: :fanout } } }
+          it { should eq :fanout }
+        end
+      end
+
+      context "options" do
+        context "by default" do
+          its(:durable?)     { should be_true }
+          its(:auto_delete?) { should be_false }
+        end
+
+        context "when pass durable: false to exchange options" do
+          let(:options)      { { exchange: { durable: false } } }
+          its(:durable?)     { should be_false }
+        end
+
+        context "when pass auto_delete: true to exchange options" do
+          let(:options)      { { exchange: { auto_delete: true } } }
+          its(:auto_delete?) { should be_true }
+        end
+      end
+    end
+
+    context "queue" do
+      subject { queue }
+      before  { worker }
+      after   {
+        delete_queue(queue)
+        delete_exchange(exch)
+      }
+
+      context "routing_key" do
+        subject { queue.routing_key }
+        #it { should be_nil }
+
+        context "when pass nil as queue name" do
+        end
+      end
+
+      context "options" do
+        context "by default" do
+          its(:durable?)     { should be_true }
+          its(:auto_delete?) { should be_false }
+          its(:exclusive?)   { should be_false }
+        end
+
+        context "when pass durable: false to queue options" do
+          let(:options)      { { queue: { durable: false } } }
+          its(:durable?)     { should be_false }
+        end
+
+        context "when pass auto_delete: true to queue options" do
+          let(:options)      { { queue: { auto_delete: true } } }
+          its(:auto_delete?) { should be_true }
+        end
+
+        context "when pass exclusive: true to queue options" do
+          let(:options)      { { queue: { exclusive: true } } }
+          its(:exclusive?)   { should be_true }
+        end
+      end
     end
 
     def timeout(&block)
