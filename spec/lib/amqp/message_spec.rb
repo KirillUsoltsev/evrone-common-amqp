@@ -6,8 +6,6 @@ describe Evrone::Common::AMQP::Message do
   let(:message) { described_class.new body, options }
   subject { message }
 
-  its(:routing_key) { should be_nil }
-
   context "to_json" do
     subject { message.to_json }
     it { should eq "{\"foo\":\"bar\"}" }
@@ -22,18 +20,26 @@ describe Evrone::Common::AMQP::Message do
     end
   end
 
-  context "publish" do
-    subject { message.publish 'foo' }
-    before { Evrone::Common::AMQP.open }
-    it { should be }
-
-    context "with exhange type" do
-      subject { message.publish 'foo', :fanout }
-    end
-  end
-
   context "routing_key" do
     let(:options)     { { routing_key: "key" } }
     its(:routing_key) { should eq 'key' }
   end
+
+  context "publish" do
+    let(:exch_name) { 'foo' }
+    let(:exch)      { conn.channel.exchanges[exch_name] }
+    let(:conn)      { Evrone::Common::AMQP.open }
+    let(:publish)   { message.publish exch_name }
+
+    before { conn and publish }
+    after  { delete_exchange exch and conn.close }
+
+    it { should be }
+
+    context "exchange" do
+      subject { exch }
+      its(:type) { should eq :topic }
+    end
+  end
+
 end

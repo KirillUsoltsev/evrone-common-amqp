@@ -1,15 +1,16 @@
 require 'spec_helper'
+require 'timeout'
+require 'thread'
 
 describe Evrone::Common::AMQP::Connection do
   let(:conn) { described_class.new }
   subject { conn }
 
-  after do
-    conn.close
-  end
+  before { conn.open  }
+  after  { conn.close }
 
   context "open" do
-    before { conn.open }
+    subject { conn.open }
 
     its(:conn)         { should be }
     its(:channel)      { should be }
@@ -26,20 +27,86 @@ describe Evrone::Common::AMQP::Connection do
   end
 
   context "close" do
-    before { conn.open }
-
-    it "should close channel" do
-      expect{ conn.close }.to change{ conn.channel }.to(nil)
-    end
-
     it "should close connection" do
       expect{ conn.close }.to change{ conn.conn }.to(nil)
     end
   end
 
   context "publish" do
-    subject { conn.publish "foo", "message" }
-    before { conn.open }
-    it { should be }
+    let(:message)   { '[publish] message' }
+    let(:options)   { {} }
+    let(:publish)   { conn.publish exch_name, message, options }
+    let(:exch_name) { 'foo' }
+    let(:exch)      { conn.channel.exchanges[exch_name] }
+
+    before { publish }
+    after  { delete_exchange(exch) }
+
+    context "created exchange" do
+      subject { exch }
+      it { should be }
+
+      context "params" do
+        context "by default" do
+          its(:durable?)     { should be_true }
+          its(:auto_delete?) { should be_false }
+        end
+
+        context "when durable: true" do
+          let(:options)      { { durable: false } }
+          its(:durable?)     { should be_false }
+        end
+
+        context "when auto_delete: true" do
+          let(:options)      { { auto_delete: true } }
+          its(:auto_delete?) { should be_true }
+        end
+      end
+
+      context "type" do
+        context "by default" do
+          its(:type) { should eq :topic }
+        end
+
+        context "fanout" do
+          let(:options) { { type: :fanout } }
+          its(:type) { should eq :fanout }
+        end
+      end
+    end
+  end
+
+  context "subscribe" do
+    let(:options)    { {} }
+    let(:queue_name) { 'bar' }
+    let(:queue)      { conn.channel.queues[queue_name]  }
+    let(:exch_name)  { 'foo' }
+    let(:exch)       { conn.channel.exchanges[exch_name] }
+    let(:collected)  { [] }
+    let(:message)    { "[subscribe] message" }
+    let(:publish)    { conn.publish exch_name, message   }
+    let(:shutdown)   { described_class.shutdown }
+    let(:worker)     {
+      Thread.new do
+        conn.subscribe(exch_name, queue_name, options) do |received|
+          collected << received
+        end
+      end
+    }
+
+    it "should receive message" do
+      worker
+      sleep 1
+      publish
+      sleep 2
+      delete_queue(queue) and delete_exchange(exch)
+      shutdown
+      timeout { worker.join }
+      expect(collected).to include(message)
+    end
+
+    def timeout(&block)
+      Timeout.timeout(3, &block)
+    end
   end
 end

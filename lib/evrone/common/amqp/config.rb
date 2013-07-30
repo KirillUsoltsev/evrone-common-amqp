@@ -18,17 +18,18 @@ module Evrone
           @pool_timeout          = 0.1
 
           @default_exchange_options = {
-            durable: true
+            durable:     true,
+            auto_delete: false
           }
 
           @default_queue_options = {
-            durable: true,
-            autodelete: false,
-            exclusive: false
+            durable:     true,
+            autodelete:  false,
+            exclusive:   false
           }
 
           @default_publish_options = {
-            durable: false
+            durable:     false
           }
 
         end

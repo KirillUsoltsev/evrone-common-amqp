@@ -32,6 +32,10 @@ module Evrone
         connection.close
       end
 
+      def logger
+        config.logger
+      end
+
     end
   end
 end
