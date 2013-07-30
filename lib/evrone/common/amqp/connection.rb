@@ -39,7 +39,7 @@ module Evrone
             @conn = ::Bunny.new config.url
             logger.info "[amqp] connecting to #{conn_info}"
             @conn.start
-            logger.info "[amqp] connected successfuly"
+            logger.info "[amqp] connected successfuly (#{server_name})"
             @conn
           end
           self
@@ -51,8 +51,10 @@ module Evrone
 
         def publish(exch_name, body, options = {})
           logger.debug "[amqp] publising message #{body.inspect} to '#{exch_name}'"
-          x = declare_exchange exch_name, options
-          x.publish body
+          routing_key = options.delete(:routing_key)
+          headers     = options.delete(:headers)
+          x           = declare_exchange exch_name, options
+          x.publish body, routing_key: routing_key, headers: headers
           logger.debug "[amqp] message published successfuly"
           true
         end
@@ -87,7 +89,16 @@ module Evrone
         end
 
         def conn_info
-          "#{@conn.user}:#{@conn.host}:#{@conn.port}/#{@conn.vhost}" if @conn
+          if conn
+            "#{conn.user}:#{conn.host}:#{conn.port}/#{conn.vhost}"
+          end
+        end
+
+        def server_name
+          if conn
+            p = conn.server_properties || {}
+            "#{p["product"]}/#{p["version"]}"
+          end
         end
 
         def channel

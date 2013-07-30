@@ -92,15 +92,16 @@ describe Evrone::Common::AMQP::Connection do
           collected << received
         end
       end
-      sleep 1
+      sleep 2
       th
     }
 
     it "should receive message" do
       worker
       publish
-      sleep 2
-      delete_queue(queue) and delete_exchange(exch)
+      sleep 3
+      delete_queue(queue)    rescue Bunny::NotFound
+      delete_exchange(exch)  rescue Bunny::NotFound
       shutdown
       timeout { worker.join }
       expect(collected).to include(message)
