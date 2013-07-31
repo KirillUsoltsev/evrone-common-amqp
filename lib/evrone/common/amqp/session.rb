@@ -57,13 +57,13 @@ module Evrone
         def publish(exch_name, body, options = {})
           assert_connection_is_open
 
-          debug "publising message #{body.inspect} to '#{exch_name}'"
 
           x_options   = options.delete(:exchange) || {}
           x           = declare_exchange exch_name, x_options
-          x.publish body, options
 
-          debug "message published successfuly"
+          debug "publising message #{body.inspect} to '#{x.name}' with #{options.inspect}"
+          x.publish body, options
+          debug "message successfuly published"
           true
         end
 
@@ -76,7 +76,7 @@ module Evrone
             q            = declare_queue    queue_name, options[:queue]
 
             q.bind(x, bind_options)
-            info "bind queue '#{q.name}' to '#{x.name}'"
+            info "subscribed to '#{q.name}' and bind to '#{x.name}' with #{bind_options.inspect}"
 
             subscribtion_loop x, q, &block
 
