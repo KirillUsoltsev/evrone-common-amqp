@@ -19,6 +19,14 @@ module Evrone
 
         module ClassMethods
 
+          def publish(message, options = {})
+            options = {
+              routing_key: routing_key,
+              headers: headers
+            }.merge(options)
+            Message.new(message, options).publish(exchange_name, exchange_options)
+          end
+
           def consume
             logger.info  "[amqp] start consumer #{to_s}"
             @cached_object = new

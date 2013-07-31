@@ -121,4 +121,44 @@ describe Evrone::Common::AMQP::Consumer do
 
   end
 
+  context "publish" do
+    let(:sess)        { consumer_class.session }
+    let(:ch)          { sess.conn.create_channel }
+    let(:exch_name)    { :foo }
+    let(:exch_options) { { type: :fanout } }
+    let(:queue_name)  { :bar }
+    let(:routing_key) { 'routing.key' }
+    let(:message)     { { 'key' =>  'value' } }
+
+    let(:queue)       { sess.declare_queue queue_name }
+    let(:exch)        { sess.declare_exchange exch_name, exch_options }
+    let(:collected)   { [] }
+
+    before do
+      consumer_class.exchange    exch_name, exch_options
+      consumer_class.queue       queue_name
+      consumer_class.routing_key routing_key
+
+      sess.open
+      queue.bind exch, routing_key: routing_key
+      consumer_class.publish(message)
+      sleep 0.25
+    end
+
+    after do
+      delete_queue queue
+      delete_exchange exch
+      sess.close
+    end
+
+    subject { queue }
+
+    its(:message_count) { should eq 1 }
+    its("pop.last")      { should eq message.to_json }
+
+    it "should have content_type header" do
+      expect(queue.pop[1][:content_type]).to eq 'application/json'
+    end
+  end
+
 end
