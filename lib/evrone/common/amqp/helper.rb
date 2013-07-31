@@ -21,6 +21,12 @@ module Evrone
           end
         end
 
+        module Shutdown
+          def shutdown
+            Common::AMQP::Session.shutdown
+          end
+        end
+
       end
     end
   end

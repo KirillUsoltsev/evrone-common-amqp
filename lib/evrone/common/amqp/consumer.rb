@@ -10,6 +10,7 @@ module Evrone
         def self.included(base)
           base.extend Helper::Session
           base.extend Helper::Logger
+          base.extend Helper::Shutdown
           base.extend Consumer::Configuration
           base.extend ClassMethods
         end

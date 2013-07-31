@@ -62,9 +62,9 @@ module Evrone
           x_options   = options.delete(:exchange) || {}
           x           = declare_exchange exch_name, x_options
 
-          debug "publising message #{body.inspect} to '#{x.name}' with #{options.inspect}"
+          trace "publising message #{body.inspect} to '#{x.name}' with #{options.inspect}"
           x.publish body, options
-          debug "message successfuly published"
+          trace "message successfuly published"
           true
         end
 
@@ -137,7 +137,7 @@ module Evrone
           end
         end
 
-        def debug(msg)
+        def trace(msg)
           logger.debug(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
         end
 
