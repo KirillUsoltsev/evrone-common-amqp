@@ -49,6 +49,10 @@ module Evrone
           def create_object
             new
           end
+
+          def consumer_name
+            @consumer_tag ||= to_s.scan(/[A-Z][a-z]*/).join("_").downcase.gsub(/_/, '.')
+          end
         end
       end
     end

@@ -3,11 +3,11 @@ require 'timeout'
 
 describe Evrone::Common::AMQP::Consumer do
 
-  class ConsumerTest
+  class Evrone::ConsumerTest
     include Evrone::Common::AMQP::Consumer
   end
 
-  let(:consumer) { ConsumerTest.new }
+  let(:consumer) { Evrone::ConsumerTest.new }
   let(:consumer_class) { consumer.class }
 
   subject { consumer }
@@ -20,13 +20,8 @@ describe Evrone::Common::AMQP::Consumer do
     context "exchange_name" do
       subject { consumer_class.exchange_name }
 
-      it 'by default should eq amq.topic' do
-        expect(subject).to eq 'amq.topic'
-      end
-
-      it "when set exchange :type to :direct should eq amq.direct" do
-        consumer_class.exchange type: :direct
-        expect(subject).to eq 'amq.direct'
+      it 'by default should eq consumer_name' do
+        expect(subject).to eq consumer_class.consumer_name
       end
 
       it "when set name should be" do
@@ -37,8 +32,8 @@ describe Evrone::Common::AMQP::Consumer do
 
     context "queue_name" do
       subject{ consumer_class.queue_name }
-      it 'by default should be nil' do
-        expect(subject).to be_nil
+      it 'by default should eq consumer_name' do
+        expect(subject).to eq consumer_class.consumer_name
       end
 
       it "when set name should be" do
@@ -159,6 +154,11 @@ describe Evrone::Common::AMQP::Consumer do
     it "should have content_type header" do
       expect(queue.pop[1][:content_type]).to eq 'application/json'
     end
+  end
+
+  context "consumer_name" do
+    subject { consumer_class.consumer_name }
+    it { should eq 'evrone.consumer.test' }
   end
 
 end

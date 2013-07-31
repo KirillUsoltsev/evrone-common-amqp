@@ -36,12 +36,7 @@ module Evrone
         end
 
         def exchange_name
-          if configuration.exchange.name
-            configuration.exchange.name
-          else
-            type = exchange_options[:type] || session.config.default_exchange_type
-            "amq.#{type}"
-          end
+          configuration.exchange.name || consumer_name
         end
 
         def exchange_options
@@ -49,7 +44,7 @@ module Evrone
         end
 
         def queue_name
-          configuration.queue.name
+          configuration.queue.name || consumer_name
         end
 
         def queue_options
