@@ -59,9 +59,10 @@ module Evrone
 
           debug "publising message #{body.inspect} to '#{exch_name}'"
 
-          routing_key = options.delete(:routing_key)
-          headers     = options.delete(:headers)
-          x           = declare_exchange exch_name, options
+          routing_key = options[:routing_key]
+          headers     = options[:headers]
+          x_options   = options[:exchange]
+          x           = declare_exchange exch_name, x_options
           x.publish body, routing_key: routing_key, headers: headers
 
           debug "message published successfuly"

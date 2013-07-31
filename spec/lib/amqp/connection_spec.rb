@@ -34,6 +34,24 @@ describe Evrone::Common::AMQP::Connection do
     its("channel.id") { should eq @id }
   end
 
+  context "channel" do
+    subject { conn.channel.id }
+    it { should eq conn.conn.default_channel.id }
+  end
+
+  context "with_channel" do
+    before do
+      @default = conn.channel.object_id
+    end
+
+    it "should create and close a new channel" do
+      conn.with_channel do
+        expect(conn.channel.object_id).to_not eq @default
+      end
+      expect(conn.channel.object_id).to eq @default
+    end
+  end
+
   context "close" do
     it "should close connection" do
       expect{ conn.close }.to change{ conn.conn }.to(nil)
@@ -108,6 +126,84 @@ describe Evrone::Common::AMQP::Connection do
           ch.close
         end
       end
+    end
+  end
+
+  context "declare_exchange" do
+    let(:options) {{}}
+    let(:exch)    { conn.declare_exchange exch_name, options }
+    subject { exch }
+
+    after { delete_exchange exch }
+
+    it{ should be }
+
+    context "by default" do
+      its(:type)         { should eq :topic }
+      its(:durable?)     { should be_true   }
+      its(:auto_delete?) { should be_false  }
+      its("channel.id")  { should eq conn.channel.id }
+    end
+
+    context "when pass durable: false into options" do
+      let(:options) { { durable: false } }
+      its(:durable?) { should be_false }
+    end
+
+    context "when pass auto_delete: true into options" do
+      let(:options) { { auto_delete: true } }
+      its(:auto_delete?) { should be_true }
+    end
+
+    context "when pass type: :fanout into options" do
+      let(:options) { { type: :fanout } }
+      its(:type) { should eq :fanout }
+    end
+
+    context "when pass :channel into options" do
+      let(:ch)      { conn.conn.create_channel }
+      let(:options) { { channel: ch } }
+      after { ch.close }
+      its("channel.id") { should eq ch.id }
+    end
+  end
+
+  context "declare_queue" do
+    let(:options) {{}}
+    let(:queue)   { conn.declare_queue queue_name, options }
+    subject { queue }
+
+    after { delete_queue queue }
+
+    it{ should be }
+
+    context "by default" do
+      its(:durable?)     { should be_true   }
+      its(:auto_delete?) { should be_false  }
+      its(:exclusive?)   { should be_false  }
+      its("channel.id")  { should eq conn.channel.id }
+    end
+
+    context "when pass durable: false into options" do
+      let(:options) { { durable: false } }
+      its(:durable?) { should be_false }
+    end
+
+    context "when pass auto_delete: true into options" do
+      let(:options) { { auto_delete: true } }
+      its(:auto_delete?) { should be_true }
+    end
+
+    context "when pass exclusive: true into options" do
+      let(:options) { { exclusive: true } }
+      its(:exclusive?) { should  be_true }
+    end
+
+    context "when pass :channel into options" do
+      let(:ch)      { conn.conn.create_channel }
+      let(:options) { { channel: ch } }
+      after { ch.close }
+      its("channel.id") { should eq ch.id }
     end
   end
 end
