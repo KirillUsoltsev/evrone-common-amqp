@@ -5,44 +5,28 @@ module Evrone
     module AMQP
       module Consumer
 
+        autoload :Configuration, File.expand_path("../consumer/configuration", __FILE__)
+
+
         def self.included(base)
-          base.__send__ :extend, ClassMethods
+          base.extend Helper
+          base.extend Consumer::Configuration
+          base.extend ClassMethods
         end
 
         def perform(message)
         end
 
         module ClassMethods
-          extend Helper
-
-          def configuration
-            @configuration ||= OpenStruct.new exchange: OpenStruct.new, queue: OpenStruct.new
-          end
-
-          def exchange(name, options = {})
-            configuration.exchange.name = name
-            configuration.exchange.options = options
-          end
-
-          def queue(name, options = {})
-            configuration.queue.name = name
-            configuration.queue.options = options
-          end
-
-          def routing_key(name)
-            configuration.routing_key = name
-          end
 
           def consume
-            raise MissingExchangeName unless configuration.exchange.name
-            connection.open.subscribe(configuration.exchange.name,
-                                      configuration.queue_name,
+            connection.open.subscribe(exchange_name,
+                                      queue_name,
                                       routing_key: routing_key,
-                                      exchange: configuration.exchange.options,
-                                      queue: configuration.queue.options)
+                                      headers:     headers,
+                                      exchange:    exchange_options,
+                                      queue:       queue_options)
           end
-
-          class MissingExchangeName < Exception ; end
         end
       end
     end
