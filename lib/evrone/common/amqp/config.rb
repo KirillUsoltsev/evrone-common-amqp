@@ -12,6 +12,10 @@ module Evrone
           reset!
         end
 
+        def default_exchange_name
+          "amq.#{default_exchange_type}"
+        end
+
         def reset!
           @url                   = nil
           @logger                = ::Logger.new(STDOUT)

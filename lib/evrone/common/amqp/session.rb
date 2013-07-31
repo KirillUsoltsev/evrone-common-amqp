@@ -87,8 +87,9 @@ module Evrone
         def declare_exchange(name, options = nil)
           assert_connection_is_open
 
-          options ||= {}
-          ch = options.delete(:channel) || channel
+          options  ||= {}
+          name     ||= config.default_exchange_name
+          ch         = options.delete(:channel) || channel
           type, opts = get_exchange_type_and_options options
           ch.exchange name, opts.merge(type: type)
         end

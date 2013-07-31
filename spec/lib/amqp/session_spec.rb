@@ -141,10 +141,16 @@ describe Evrone::Common::AMQP::Session do
     it{ should be }
 
     context "by default" do
+      its(:name)         { should eq exch_name }
       its(:type)         { should eq :topic }
       its(:durable?)     { should be_true   }
       its(:auto_delete?) { should be_false  }
       its("channel.id")  { should eq conn.channel.id }
+    end
+
+    context "when exchange name is nil should use default_exchange_name" do
+      let(:exch) { conn.declare_exchange nil, options }
+      its(:name) { should eq 'amq.topic' }
     end
 
     context "when pass durable: false into options" do
@@ -179,10 +185,16 @@ describe Evrone::Common::AMQP::Session do
     it{ should be }
 
     context "by default" do
+      its(:name)         { should eq queue_name }
       its(:durable?)     { should be_true   }
       its(:auto_delete?) { should be_false  }
       its(:exclusive?)   { should be_false  }
       its("channel.id")  { should eq conn.channel.id }
+    end
+
+    context 'when queue name is nil should use generated name' do
+      let(:queue) { conn.declare_queue nil, options }
+      its(:name) { should match(/amq\.gen/) }
     end
 
     context "when pass durable: false into options" do

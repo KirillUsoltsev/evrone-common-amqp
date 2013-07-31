@@ -26,7 +26,9 @@ module Evrone
           body.serialized
         end
 
-        def publish(exch_name, exch_options = {})
+        def publish(*args)
+          exch_name, exch_options = extract_exch_name_and_options(*args)
+
           options.merge! content_type: content_type
 
           session.publish exch_name,
@@ -35,6 +37,14 @@ module Evrone
           self
         end
 
+        private
+
+          def extract_exch_name_and_options(*args)
+            exch_options = args.last.is_a?(Hash) ? args.pop : {}
+
+            exch_name = args.first
+            [exch_name, exch_options]
+          end
       end
     end
   end
