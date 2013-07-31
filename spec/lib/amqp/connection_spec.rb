@@ -4,6 +4,9 @@ require 'thread'
 
 describe Evrone::Common::AMQP::Connection do
   let(:conn) { described_class.new }
+  let(:queue_name) { 'foo' }
+  let(:exch_name)  { 'bar' }
+
   subject { conn }
 
   before { conn.open  }
@@ -12,178 +15,98 @@ describe Evrone::Common::AMQP::Connection do
   context "open" do
     subject { conn.open }
 
-    its(:conn)         { should be }
-    its(:channel)      { should be }
     its("conn.status") { should eq :open }
+    its(:open?)        { should be }
+  end
 
-    context "twice" do
-      before do
-        @id = conn.conn.object_id
-        conn.open
-      end
-      its("conn.status")    { should eq :open }
-      its("conn.object_id") { should eq @id }
+  context "should reuse connection" do
+    before do
+      @id = conn.conn.object_id
+      conn.open
     end
+    its("conn.object_id") { should eq @id }
+  end
+
+  context "should reuse channel" do
+    before do
+      @id = conn.channel.id
+    end
+    its("channel.id") { should eq @id }
   end
 
   context "close" do
     it "should close connection" do
       expect{ conn.close }.to change{ conn.conn }.to(nil)
     end
+
+    it "should change open? to false" do
+      expect{ conn.close }.to change{ conn.open? }.from(true).to(nil)
+    end
   end
 
   context "publish" do
-    let(:message)   { '[publish] message' }
-    let(:options)   { {} }
-    let(:publish)   { conn.publish exch_name, message, options }
-    let(:exch_name) { 'foo' }
-    let(:exch)      { conn.channel.exchanges[exch_name] }
+    let(:message)     { '[publish] message' }
+    let(:ch)          { conn.conn.create_channel }
+    let(:queue)       { conn.declare_queue    queue_name, channel: ch }
+    let(:exch)        { conn.declare_exchange exch_name,  channel: ch }
+    let(:routing_key) { 'routing_key' }
 
-    before { publish }
-    after  { delete_exchange(exch) }
-
-    context "created exchange" do
-      subject { exch }
-      it { should be }
-
-      context "params" do
-        context "by default" do
-          its(:durable?)     { should be_true }
-          its(:auto_delete?) { should be_false }
-        end
-
-        context "when pass durable: true to options" do
-          let(:options)      { { durable: false } }
-          its(:durable?)     { should be_false }
-        end
-
-        context "when pass auto_delete: true to options" do
-          let(:options)      { { auto_delete: true } }
-          its(:auto_delete?) { should be_true }
-        end
-      end
-
-      context "type" do
-        context "by default" do
-          its(:type) { should eq :topic }
-        end
-
-        context "when pass type: :fanout to options" do
-          let(:options) { { type: :fanout } }
-          its(:type) { should eq :fanout }
-        end
-      end
+    before do
+      queue.bind exch, routing_key: routing_key
+      conn.publish exch_name, message, routing_key: routing_key
+      sleep 0.25
     end
+
+    after do
+      delete_queue queue
+      delete_exchange exch
+      ch.close
+    end
+
+    subject { queue }
+
+    its(:message_count) { should eq 1 }
+    its("pop.last")     { should eq message }
   end
 
   context "subscribe" do
-    let(:options)    { {} }
-    let(:queue_name) { 'bar' }
-    let(:queue)      { conn.channel.queues[queue_name]  }
-    let(:exch_name)  { 'foo' }
-    let(:exch)       { conn.channel.exchanges[exch_name] }
-    let(:collected)  { [] }
-    let(:message)    { "[subscribe] message" }
-    let(:shutdown)   { described_class.shutdown }
+    let(:message)     { '[subscribe] message' }
+    let(:ch)          { conn.conn.create_channel }
+    let(:queue)       { conn.declare_queue    queue_name, channel: ch }
+    let(:exch)        { conn.declare_exchange exch_name,  channel: ch }
 
-    let(:worker)     {
-      conn.subscribe(exch_name, queue_name, options) do |received|
-        collected << received
-        shutdown
-      end
-    }
+    let(:routing_key) { 'routing_key' }
 
-    it "should receive message" do
-      orig_loop = conn.method(:subscribtion_loop)
-
-      mock(conn).subscribtion_loop(anything, anything) do |x,q, block|
-        x.publish message
-        orig_loop.call(x, q, &block)
-        delete_queue q
-        delete_exchange x
-      end
-      timeout { worker }
-      expect(collected).to include(message)
-    end
-
-    context "exchange" do
-      subject { exch }
-      before  { worker }
-      after   {
-        delete_queue(queue)
-        delete_exchange(exch)
-      }
-
-      context "type" do
-        subject { exch.type }
-
-        context "by default" do
-          it { should eq :topic }
-        end
-
-        context "when pass type: :fanout to exchange options" do
-          let(:options) { { exchange: { type: :fanout } } }
-          it { should eq :fanout }
-        end
-      end
-
-      context "options" do
-        context "by default" do
-          its(:durable?)     { should be_true }
-          its(:auto_delete?) { should be_false }
-        end
-
-        context "when pass durable: false to exchange options" do
-          let(:options)      { { exchange: { durable: false } } }
-          its(:durable?)     { should be_false }
-        end
-
-        context "when pass auto_delete: true to exchange options" do
-          let(:options)      { { exchange: { auto_delete: true } } }
-          its(:auto_delete?) { should be_true }
-        end
-      end
+    before do
+      queue.bind exch, routing_key: routing_key
+      exch.publish(message, routing_key: routing_key)
+      sleep 0.25
     end
 
     context "queue" do
       subject { queue }
-      before  { worker }
-      after   {
-        delete_queue(queue)
-        delete_exchange(exch)
-      }
 
-      context "options" do
-        context "by default" do
-          its(:durable?)     { should be_true }
-          its(:auto_delete?) { should be_false }
-          its(:exclusive?)   { should be_false }
-        end
-
-        context "when pass durable: false to queue options" do
-          let(:options)      { { queue: { durable: false } } }
-          its(:durable?)     { should be_false }
-        end
-
-        context "when pass auto_delete: true to queue options" do
-          let(:options)      { { queue: { auto_delete: true } } }
-          its(:auto_delete?) { should be_true }
-        end
-
-        context "when pass exclusive: true to queue options" do
-          let(:options)      { { queue: { exclusive: true } } }
-          its(:exclusive?)   { should be_true }
-        end
+      after do
+        delete_queue queue
+        delete_exchange exch
+        ch.close
       end
+
+      its(:message_count) { should eq 1 }
+      its("pop.last")     { should eq message }
     end
 
-    def timeout(&block)
-      Timeout.timeout(run_timeout_from_env || 3, &block)
-    end
+    it "should subscribe to qeuue and receive message" do
+      collected = []
+      Timeout.timeout(5) do
+        conn.subscribe exch_name, queue_name do |received|
+          collected << received
+          described_class.shutdown
 
-    def run_timeout_from_env
-      if i =  ENV['TEST_RUN_TIMEOUT']
-        i.to_i
+          delete_queue queue
+          delete_exchange exch
+          ch.close
+        end
       end
     end
   end

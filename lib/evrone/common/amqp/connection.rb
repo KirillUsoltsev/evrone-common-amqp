@@ -5,6 +5,8 @@ module Evrone
     module AMQP
       class Connection
 
+        CHANNEL_KEY = :evrone_amqp_channel
+
         attr_reader :conn
 
         include Helper
@@ -35,10 +37,14 @@ module Evrone
         def open
           @conn ||= begin
             self.class.resume
-            @conn = ::Bunny.new config.url, heartbeat: config.heartbeat
-            logger.info "[amqp] connecting to #{conn_info}"
+
+            @conn = ::Bunny.new config.url,
+              heartbeat: config.heartbeat,
+              logger:    config.logger
+
+            info "connecting to #{conn_info}"
             @conn.start
-            logger.info "[amqp] connected successfuly (#{server_name})"
+            info "connected successfuly (#{server_name})"
             @conn
           end
           self
@@ -49,49 +55,72 @@ module Evrone
         end
 
         def publish(exch_name, body, options = {})
-          logger.debug "[amqp] publising message #{body.inspect} to '#{exch_name}'"
+          assert_connection_is_open
+
+          debug "publising message #{body.inspect} to '#{exch_name}'"
 
           routing_key = options.delete(:routing_key)
           headers     = options.delete(:headers)
           x           = declare_exchange exch_name, options
           x.publish body, routing_key: routing_key, headers: headers
 
-          logger.debug "[amqp] message published successfuly"
+          debug "message published successfuly"
           true
         end
 
         def subscribe(exch_name, queue_name, options = {}, &block)
-          logger.info "[amqp] subscribing to #{exch_name}"
+          with_channel do
+            info "subscribing to #{exch_name}"
 
-          bind_options = extract_bind_options! options
-          x            = declare_exchange exch_name,  options[:exchange]
-          q            = declare_queue    queue_name, options[:queue]
+            bind_options = extract_bind_options! options
+            x            = declare_exchange exch_name,  options[:exchange]
+            q            = declare_queue    queue_name, options[:queue]
 
-          q.bind(x, bind_options)
-          logger.info "[amqp] bind queue '#{q.name}' to '#{x.name}'"
+            q.bind(x, bind_options)
+            info "bind queue '#{q.name}' to '#{x.name}'"
 
-          subscribtion_loop x, q, &block
+            subscribtion_loop x, q, &block
 
-          close if shutdown?
+            close if shutdown?
+          end
         end
 
         def declare_exchange(name, options = nil)
-          assert_connection_open
+          assert_connection_is_open
 
-          type, options = get_exchange_type_and_options options
-          channel.exchange type, name, options
+          options ||= {}
+          ch = options.delete(:channel) || channel
+          type, opts = get_exchange_type_and_options options
+          ch.exchange name, opts.merge(type: type)
         end
 
         def declare_queue(name, options = nil)
-          assert_connection_open
+          assert_connection_is_open
 
-          name, options = get_queue_name_and_options(name, options)
-          channel.queue name, options
+          options ||= {}
+          ch = options.delete(:channel) || channel
+          name, opts = get_queue_name_and_options(name, options)
+          ch.queue name, opts
         end
 
         def channel
-          assert_connection_open
-          conn.channel
+          assert_connection_is_open
+
+          Thread.current[CHANNEL_KEY] || conn.default_channel
+        end
+
+        def with_channel
+          assert_connection_is_open
+
+          old,new = nil
+          begin
+            old,new = Thread.current[CHANNEL_KEY], conn.create_channel
+            Thread.current[CHANNEL_KEY] = new
+            yield
+          ensure
+            Thread.current[CHANNEL_KEY] = old
+            new.close if new && new.open?
+          end
         end
 
         def conn_info
@@ -130,9 +159,9 @@ module Evrone
           end
 
           def log_received_message(delivery_info, payload)
-            logger.info "[amqp] receive ##{delivery_info.delivery_tag} #{payload.inspect}"
+            info "receive ##{delivery_info.delivery_tag} #{payload.inspect}"
             status = yield
-            logger.info "[amqp] commit ##{delivery_info.delivery_tag}"
+            info "commit ##{delivery_info.delivery_tag}"
             status
           end
 
@@ -151,8 +180,16 @@ module Evrone
             { routing_key: options.delete(:routing_key) }
           end
 
-          def assert_connection_open
+          def assert_connection_is_open
             raise(ConnectionNotOpened, "call Evrone::Common::AMQP.open first") unless conn && conn.open?
+          end
+
+          def debug(msg)
+            logger.debug(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
+          end
+
+          def info(msg)
+            logger.info(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
           end
 
           class ConnectionNotOpened < ::Exception ; end
