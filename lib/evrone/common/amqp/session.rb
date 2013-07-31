@@ -29,7 +29,7 @@ module Evrone
         def close
           if conn && conn.open?
             conn.close
-            logger.info "[amqp] close connection"
+            logger.warn "[amqp] close connection"
           end
           @conn = nil
           self
@@ -43,9 +43,9 @@ module Evrone
               heartbeat: config.heartbeat,
               logger:    config.logger
 
-            info "connecting to #{conn_info}"
+            warn "connecting to #{conn_info}"
             @conn.start
-            info "connected successfuly (#{server_name})"
+            warn "connected successfuly (#{server_name})"
             @conn
           end
           self
@@ -62,22 +62,22 @@ module Evrone
           x_options   = options.delete(:exchange) || {}
           x           = declare_exchange exch_name, x_options
 
-          trace "publising message #{body.inspect} to '#{x.name}' with #{options.inspect}"
+          debug "publising message #{body.inspect} to '#{x.name}' with #{options.inspect}"
           x.publish body, options
-          trace "message successfuly published"
+          debug "message successfuly published"
           true
         end
 
         def subscribe(exch_name, queue_name, options = {}, &block)
           with_channel do
-            info "subscribing to #{exch_name}"
+            warn "subscribing to #{exch_name}"
 
             bind_options = extract_bind_options! options
             x            = declare_exchange exch_name,  options[:exchange]
             q            = declare_queue    queue_name, options[:queue]
 
             q.bind(x, bind_options)
-            info "subscribed to '#{q.name}' and bind to '#{x.name}' with #{bind_options.inspect}"
+            warn "subscribed to '#{q.name}' and bind to '#{x.name}' with #{bind_options.inspect}"
 
             subscribtion_loop x, q, &block
 
@@ -137,12 +137,10 @@ module Evrone
           end
         end
 
-        def trace(msg)
-          logger.debug(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
-        end
-
-        def info(msg)
-          logger.info(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
+        %w{ debug info warn }.each do |m|
+          define_method m do |msg|
+            logger.__send__(m, (open? ? "[amqp:#{channel.id}] #{msg}" : "[amqp] #{msg}"))
+          end
         end
 
         private
