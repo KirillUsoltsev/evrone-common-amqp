@@ -190,7 +190,8 @@ module Evrone
           end
 
           def assert_connection_is_open
-            raise(ConnectionNotOpened, "call Evrone::Common::AMQP.open first") unless conn && conn.open?
+            open
+            #raise(ConnectionNotOpened, "call Evrone::Common::AMQP.open first") unless conn && conn.open?
           end
 
           class ConnectionNotOpened < ::Exception ; end
