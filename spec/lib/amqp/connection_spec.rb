@@ -84,26 +84,25 @@ describe Evrone::Common::AMQP::Connection do
     let(:exch)       { conn.channel.exchanges[exch_name] }
     let(:collected)  { [] }
     let(:message)    { "[subscribe] message" }
-    let(:publish)    { conn.publish exch_name, message   }
     let(:shutdown)   { described_class.shutdown }
+
     let(:worker)     {
-      th = Thread.new do
-        conn.subscribe(exch_name, queue_name, options) do |received|
-          collected << received
-        end
+      conn.subscribe(exch_name, queue_name, options) do |received|
+        collected << received
+        shutdown
       end
-      sleep(run_timeout_from_env || 2)
-      th
     }
 
     it "should receive message" do
-      worker
-      publish
-      sleep(run_timeout_from_env || 3)
-      delete_queue(queue)
-      delete_exchange(exch)
-      shutdown
-      timeout { worker.join }
+      orig_loop = conn.method(:subscribtion_loop)
+
+      mock(conn).subscribtion_loop(anything, anything) do |x,q, block|
+        x.publish message
+        orig_loop.call(x, q, &block)
+        delete_queue q
+        delete_exchange x
+      end
+      timeout { worker }
       expect(collected).to include(message)
     end
 

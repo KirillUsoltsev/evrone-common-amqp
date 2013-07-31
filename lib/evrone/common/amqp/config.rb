@@ -5,7 +5,8 @@ module Evrone
     module AMQP
       class Config
         attr_accessor :url, :default_exchange_options, :default_queue_options,
-          :default_publish_options, :default_exchange_type, :logger, :pool_timeout
+          :default_publish_options, :default_exchange_type, :logger, :pool_timeout,
+          :heartbeat
 
         def initialize
           reset!
@@ -16,6 +17,7 @@ module Evrone
           @logger                = ::Logger.new(STDOUT)
           @default_exchange_type = :topic
           @pool_timeout          = 0.1
+          @heartbeat             = 10
 
           @default_exchange_options = {
             durable:     true,
