@@ -5,7 +5,7 @@ module Evrone
   module Common
     module AMQP
       autoload :Config,     File.expand_path("../amqp/config",     __FILE__)
-      autoload :Connection, File.expand_path("../amqp/connection", __FILE__)
+      autoload :Session,    File.expand_path("../amqp/session",    __FILE__)
       autoload :Consumer,   File.expand_path("../amqp/consumer",   __FILE__)
       autoload :Helper,     File.expand_path("../amqp/helper",     __FILE__)
       autoload :Message,    File.expand_path("../amqp/message",    __FILE__)
@@ -20,16 +20,16 @@ module Evrone
         @config ||= Common::AMQP::Config.new
       end
 
-      def connection
-        @connection ||= Common::AMQP::Connection.new
+      def session
+        @session ||= Common::AMQP::Session.new
       end
 
       def open
-        connection.open
+        session.open
       end
 
       def close
-        connection.close
+        session.close
       end
 
       def logger

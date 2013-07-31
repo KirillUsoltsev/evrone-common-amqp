@@ -1,89 +1,55 @@
 require 'spec_helper'
 
 describe Evrone::Common::AMQP::Message do
-  let(:body)            { { foo: :bar   } }
-  let(:message_options) { { param: :key } }
+  let(:body)            { { foo: :bar } }
+  let(:routing_key)     { 'routing.key' }
+  let(:message_options) { { routing_key: routing_key } }
   let(:message)         { described_class.new body, message_options }
+
   subject { message }
 
-  context "to_json" do
-    subject { message.to_json }
-    it { should eq "{\"foo\":\"bar\"}" }
+  its(:routing_key) { should eq routing_key }
 
-    context "with existing 'to_json' method" do
-      before do
-        def body.to_json
-          "to_json method"
-        end
-      end
-      it { should eq 'to_json method' }
-    end
+  context "when body is string" do
+    let(:body) { 'string' }
+    its(:serialized)    { should eq 'string' }
+    its(:content_type)  { should eq 'text/plain' }
   end
 
-  context "routing_key" do
-    let(:message_options) { { routing_key: "key" } }
-    its(:routing_key)     { should eq 'key' }
+  context "when body has to_json method" do
+    before do
+      mock(body).to_json { 'to json' }
+    end
+    its(:serialized)    { should eq 'to json' }
+    its(:content_type)  { should eq 'application/json' }
   end
 
   context "publish" do
-    let(:exch_name) { 'foo' }
-    let(:exch)      { conn.channel.exchanges[exch_name] }
-    let(:conn)      { Evrone::Common::AMQP.open }
-    let(:type)      { nil }
-    let(:publish)   { message.publish exch_name, type }
-    subject { publish }
+    let(:conn)       { Evrone::Common::AMQP.open }
+    let(:exch_name)  { 'foo' }
+    let(:queue_name) { 'bar' }
+    let(:ch)         { conn.conn.create_channel }
+    let(:exch_options) { { type: :direct } }
+    let(:exch)       { conn.declare_exchange exch_name,  exch_options.merge(channel: ch) }
+    let(:queue)      { conn.declare_queue    queue_name, channel: ch }
 
-    context "by default" do
-      before do
-        mock(message.connection).publish("foo", anything, hash_including(type: nil))
-      end
-      it { should be }
+    before { conn.open }
+
+    after do
+      delete_queue queue
+      delete_exchange exch
+      conn.close
     end
 
-    context "when pass type value" do
-      let(:type) { :some_value }
-      before do
-        mock(message.connection).publish("foo", anything, hash_including(type: :some_value))
-      end
-      it { should be }
-    end
-
-    context "when pass empty exchange name and define them in class" do
-      let(:exch_name) { nil }
-      before do
-        message.class.exchange :baz
-        mock(message.connection).publish("baz", anything, anything)
-      end
-      it{ should be }
-    end
-
-    context "when pass empty exchange type and define them in class" do
-      before do
-        message.class.exchange type: :fanout
-        mock(message.connection).publish(anything, anything, hash_including(type: :fanout))
-      end
-      it { should be }
-    end
-
-    context "should merge instance options with class defined options" do
-      let(:message_options) { { foo: :bar } }
-      before do
-        message.class.exchange some_key: :some_value
-        mock(message.connection).publish(anything, anything, hash_including({foo: :bar, some_key: :some_value }))
-      end
-      it { should be }
-    end
-
-    context "when define routing key as method and pass they into message options" do
-      let(:message_options) { { routing_key: "key" } }
-      before do
-        def message.routing_key
-          'changed key'
-        end
-        mock(message.connection).publish(anything, anything, hash_including( routing_key: "changed key" ))
-      end
-      it { should be }
+    it "should delivery message" do
+      queue.bind(exch, routing_key: routing_key)
+      sleep 0.25
+      message.publish exch_name, exch_options
+      sleep 0.25
+      delivery_info, properties, payload = queue.pop
+      expect(payload).to eq body.to_json
+      expect(properties[:content_type]).to eq 'application/json'
+      expect(delivery_info.routing_key).to eq routing_key
     end
   end
-
 end

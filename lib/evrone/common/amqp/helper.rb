@@ -11,8 +11,8 @@ module Evrone
           config.logger
         end
 
-        def connection
-          Common::AMQP.connection
+        def session
+          Common::AMQP.session
         end
 
       end

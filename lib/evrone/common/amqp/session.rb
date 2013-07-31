@@ -3,7 +3,7 @@ require 'bunny'
 module Evrone
   module Common
     module AMQP
-      class Connection
+      class Session
 
         CHANNEL_KEY = :evrone_amqp_channel
 
@@ -59,11 +59,9 @@ module Evrone
 
           debug "publising message #{body.inspect} to '#{exch_name}'"
 
-          routing_key = options[:routing_key]
-          headers     = options[:headers]
-          x_options   = options[:exchange]
+          x_options   = options.delete(:exchange) || {}
           x           = declare_exchange exch_name, x_options
-          x.publish body, routing_key: routing_key, headers: headers
+          x.publish body, options
 
           debug "message published successfuly"
           true
@@ -143,10 +141,10 @@ module Evrone
             loop do
               break if shutdown?
 
-              delivery_info, _, payload = q.pop(ack: true)
+              delivery_info, properties, payload = q.pop(ack: true)
               if payload
                 log_received_message delivery_info, payload do
-                  yield payload
+                  yield delivery_info, properties, payload
                   channel.ack delivery_info.delivery_tag, false
                 end
               else

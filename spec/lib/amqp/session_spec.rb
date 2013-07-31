@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'timeout'
 require 'thread'
 
-describe Evrone::Common::AMQP::Connection do
+describe Evrone::Common::AMQP::Session do
   let(:conn) { described_class.new }
   let(:queue_name) { 'foo' }
   let(:exch_name)  { 'bar' }
@@ -83,8 +83,9 @@ describe Evrone::Common::AMQP::Connection do
 
     subject { queue }
 
-    its(:message_count) { should eq 1 }
-    its("pop.last")     { should eq message }
+    its(:message_count)          { should eq 1 }
+    its("pop.last")              { should eq message }
+    its("pop.first.routing_key") { should eq routing_key }
   end
 
   context "subscribe" do
@@ -114,10 +115,10 @@ describe Evrone::Common::AMQP::Connection do
       its("pop.last")     { should eq message }
     end
 
-    it "should subscribe to qeuue and receive message" do
+    it "should subscribe to queue and receive message" do
       collected = []
       Timeout.timeout(5) do
-        conn.subscribe exch_name, queue_name do |received|
+        conn.subscribe exch_name, queue_name do |_, _, received|
           collected << received
           described_class.shutdown
 
@@ -126,6 +127,7 @@ describe Evrone::Common::AMQP::Connection do
           ch.close
         end
       end
+      expect(collected).to eq [message]
     end
   end
 
