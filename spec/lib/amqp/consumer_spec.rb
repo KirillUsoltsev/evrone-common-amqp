@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'timeout'
 
 describe Evrone::Common::AMQP::Consumer do
 
@@ -7,13 +8,14 @@ describe Evrone::Common::AMQP::Consumer do
   end
 
   let(:consumer) { ConsumerTest.new }
+  let(:consumer_class) { consumer.class }
+
   subject { consumer }
 
-  context '(configuration)' do
-    let(:consumer_class) { consumer.class }
-    subject { consumer_class }
+  before { consumer_class.reset_configuration! }
 
-    before { consumer_class.reset_configuration! }
+  context '(configuration)' do
+    subject { consumer_class }
 
     context "exchange_name" do
       subject { consumer_class.exchange_name }
@@ -73,6 +75,49 @@ describe Evrone::Common::AMQP::Consumer do
         end
       end
     end
+  end
+
+  context "consume" do
+    let(:sess)        { consumer_class.session }
+    let(:ch)          { sess.conn.create_channel }
+    let(:exch_name)   { :foo }
+    let(:queue_name)  { :bar }
+    let(:routing_key) { 'routing.key' }
+    let(:message)     { '[consumer] message' }
+
+    let(:queue)       { sess.declare_queue queue_name }
+    let(:exch)        { sess.declare_exchange exch_name }
+    let(:collected)   { [] }
+
+    before do
+      consumer_class.exchange    exch_name
+      consumer_class.queue       queue_name
+      consumer_class.routing_key routing_key
+
+      sess.open
+      queue.bind exch, routing_key: routing_key
+      exch.publish message, routing_key: routing_key
+      sleep 0.25
+    end
+
+    after do
+      sess.close
+    end
+
+    it "should receive message" do
+      mock(consumer_class).cached_object.mock!.perform(anything) do |payload|
+        collected << payload
+        sess.class.shutdown
+        delete_queue queue
+        delete_exchange exch
+        ch.close
+      end
+      Timeout.timeout(5) do
+        consumer_class.consume
+      end
+      expect(collected).to eq [message]
+    end
+
   end
 
 end

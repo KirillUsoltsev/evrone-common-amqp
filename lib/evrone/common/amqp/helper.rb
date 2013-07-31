@@ -3,16 +3,22 @@ module Evrone
     module AMQP
       module Helper
 
-        def config
-          Common::AMQP.config
+        module Config
+          def config
+            Common::AMQP.config
+          end
         end
 
-        def logger
-          config.logger
+        module Logger
+          def logger
+            Common::AMQP.logger
+          end
         end
 
-        def session
-          Common::AMQP.session
+        module Session
+          def session
+            Common::AMQP.session
+          end
         end
 
       end

@@ -5,7 +5,7 @@ module Evrone
 
         autoload :Body, File.expand_path("../message/body", __FILE__)
 
-        include Helper
+        include Helper::Session
 
         attr_reader :body, :options
 

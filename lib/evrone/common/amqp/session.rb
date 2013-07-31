@@ -9,7 +9,8 @@ module Evrone
 
         attr_reader :conn
 
-        include Helper
+        include Helper::Config
+        include Helper::Logger
 
         class << self
           def shutdown
@@ -136,6 +137,14 @@ module Evrone
           end
         end
 
+        def debug(msg)
+          logger.debug(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
+        end
+
+        def info(msg)
+          logger.info(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
+        end
+
         private
 
           def subscribtion_loop(x, q, &block)
@@ -182,14 +191,6 @@ module Evrone
 
           def assert_connection_is_open
             raise(ConnectionNotOpened, "call Evrone::Common::AMQP.open first") unless conn && conn.open?
-          end
-
-          def debug(msg)
-            logger.debug(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
-          end
-
-          def info(msg)
-            logger.info(open? ? "[amqp##{channel.id}] #{msg}" : "[amqp] #{msg}")
           end
 
           class ConnectionNotOpened < ::Exception ; end
