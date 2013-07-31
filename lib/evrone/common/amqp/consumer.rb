@@ -14,7 +14,7 @@ module Evrone
           base.extend ClassMethods
         end
 
-        def perform(message)
+        def perform(message, properties)
         end
 
         module ClassMethods
@@ -33,11 +33,12 @@ module Evrone
           end
 
           def subscription_loop(delivery_info, properties, payload)
-            cached_object.perform payload
+            message = Message::Body.deserialize payload, properties
+            create_object.perform message, properties
           end
 
-          def cached_object
-            @cached_options
+          def create_object
+            new
           end
         end
       end

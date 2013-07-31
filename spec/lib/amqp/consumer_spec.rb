@@ -83,7 +83,7 @@ describe Evrone::Common::AMQP::Consumer do
     let(:exch_name)   { :foo }
     let(:queue_name)  { :bar }
     let(:routing_key) { 'routing.key' }
-    let(:message)     { '[consumer] message' }
+    let(:message)     { { 'key' =>  'value' } }
 
     let(:queue)       { sess.declare_queue queue_name }
     let(:exch)        { sess.declare_exchange exch_name }
@@ -96,7 +96,8 @@ describe Evrone::Common::AMQP::Consumer do
 
       sess.open
       queue.bind exch, routing_key: routing_key
-      exch.publish message, routing_key: routing_key
+      body = Evrone::Common::AMQP::Message::Body.new(message)
+      exch.publish body.serialized, routing_key: routing_key, content_type: body.content_type
       sleep 0.25
     end
 
@@ -105,7 +106,7 @@ describe Evrone::Common::AMQP::Consumer do
     end
 
     it "should receive message" do
-      mock(consumer_class).cached_object.mock!.perform(anything) do |payload|
+      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
         collected << payload
         sess.class.shutdown
         delete_queue queue

@@ -22,6 +22,17 @@ module Evrone
             @content_type
           end
 
+          class << self
+            def deserialize(message, properties)
+              case properties[:content_type]
+              when 'application/json'
+                JSON.parse(message)
+              else
+                message
+              end
+            end
+          end
+
           private
 
             def as_string
