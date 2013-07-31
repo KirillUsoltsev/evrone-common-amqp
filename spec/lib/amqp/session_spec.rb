@@ -165,7 +165,6 @@ describe Evrone::Common::AMQP::Session do
     context "when pass :channel into options" do
       let(:ch)      { conn.conn.create_channel }
       let(:options) { { channel: ch } }
-      after { ch.close }
       its("channel.id") { should eq ch.id }
     end
   end
@@ -204,7 +203,6 @@ describe Evrone::Common::AMQP::Session do
     context "when pass :channel into options" do
       let(:ch)      { conn.conn.create_channel }
       let(:options) { { channel: ch } }
-      after { ch.close }
       its("channel.id") { should eq ch.id }
     end
   end

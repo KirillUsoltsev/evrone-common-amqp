@@ -6,7 +6,11 @@ module Evrone
       module Consumer::Configuration
 
         def configuration
-          @configuration ||= OpenStruct.new exchange: OpenStruct.new, queue: OpenStruct.new
+          @configuration ||= reset_configuration!
+        end
+
+        def reset_configuration!
+          @configuration = OpenStruct.new exchange: OpenStruct.new, queue: OpenStruct.new
         end
 
         def exchange(*name)

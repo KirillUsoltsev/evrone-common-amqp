@@ -10,9 +10,10 @@ describe Evrone::Common::AMQP::Consumer do
   subject { consumer }
 
   context '(configuration)' do
-
     let(:consumer_class) { consumer.class }
     subject { consumer_class }
+
+    before { consumer_class.reset_configuration! }
 
     context "exchange_name" do
       subject { consumer_class.exchange_name }
