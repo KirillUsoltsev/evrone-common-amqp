@@ -35,7 +35,7 @@ module Evrone
 
           @conn ||= begin
             @conn = ::Bunny.new config.url,
-              heartbeat: config.heartbeat
+              heartbeat: :server
           end
 
           unless @conn.open?
@@ -98,7 +98,7 @@ module Evrone
         %w{ debug info warn }.each do |m|
           define_method m do |msg|
             Common::AMQP.logger.public_send(m,
-              (open? ? "[amqp:#{channel.id}] #{msg}" : "[amqp] #{msg}")
+              ((open? && channel) ? "[amqp:#{channel.id}] #{msg}" : "[amqp] #{msg}")
             )
           end
         end
