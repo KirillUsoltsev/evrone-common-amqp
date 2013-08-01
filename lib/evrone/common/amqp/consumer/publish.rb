@@ -11,7 +11,10 @@ module Evrone
           options[:routing_key] ||= routing_key
           options[:headers]     ||= headers
 
+          session.debug "#{to_s} publishing #{message.inspect} to #{x.name}"
           x.publish m.serialize, m.options
+          session.debug "#{to_s} successfuly published"
+          self
         end
 
       end

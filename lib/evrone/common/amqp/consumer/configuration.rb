@@ -56,6 +56,11 @@ module Evrone
         def queue_options
           consumer_configuration.queue.options
         end
+
+        def consumer_name
+          @consumer_name ||= to_s.scan(/[A-Z][a-z]*/).join("_").downcase.gsub(/_/, '.')
+        end
+
       end
     end
   end

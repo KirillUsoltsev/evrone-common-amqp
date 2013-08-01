@@ -11,9 +11,6 @@ module Evrone
 
         def self.included(base)
 
-          base.extend Helper::Session
-          base.extend Helper::Logger
-
           base.extend Consumer::Configuration
           base.extend Consumer::Publish
           base.extend Consumer::Subscribe
@@ -23,8 +20,16 @@ module Evrone
 
         module ClassMethods
 
-          def consumer_name
-            @consumer_name ||= to_s.scan(/[A-Z][a-z]*/).join("_").downcase.gsub(/_/, '.')
+          def shutdown?
+            Common::AMQP.shutdown?
+          end
+
+          def shutdown
+            Common::AMQP.shutdown
+          end
+
+          def session
+            Common::AMQP.session
           end
 
           private

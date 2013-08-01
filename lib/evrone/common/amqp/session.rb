@@ -9,9 +9,6 @@ module Evrone
 
         attr_reader :conn
 
-        include Helper::Config
-        include Helper::Logger
-
         class << self
           def shutdown
             @shutdown = true
@@ -101,10 +98,14 @@ module Evrone
 
         %w{ debug info warn }.each do |m|
           define_method m do |msg|
-            logger.public_send(m,
+            Common::AMQP.logger.public_send(m,
               (open? ? "[amqp:#{channel.id}] #{msg}" : "[amqp] #{msg}")
             )
           end
+        end
+
+        def config
+          Common::AMQP.config
         end
 
         private

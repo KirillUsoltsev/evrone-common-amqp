@@ -6,7 +6,6 @@ module Evrone
       autoload :Config,     File.expand_path("../amqp/config",     __FILE__)
       autoload :Session,    File.expand_path("../amqp/session",    __FILE__)
       autoload :Consumer,   File.expand_path("../amqp/consumer",   __FILE__)
-      autoload :Helper,     File.expand_path("../amqp/helper",     __FILE__)
       autoload :Message,    File.expand_path("../amqp/message",    __FILE__)
 
       extend self
@@ -33,6 +32,14 @@ module Evrone
 
       def logger
         config.logger
+      end
+
+      def shutdown
+        Common::AMQP::Session.shutdown
+      end
+
+      def shutdown?
+        Common::AMQP::Session.shutdown?
       end
 
     end
