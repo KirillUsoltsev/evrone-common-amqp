@@ -114,15 +114,8 @@ describe Evrone::Common::AMQP::Consumer do
     end
 
     it "should receive message" do
-      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
+      consumer_perform do |payload|
         collected << payload
-        sess.class.shutdown
-        delete_queue queue
-        delete_exchange exch
-        ch.close
-      end
-      Timeout.timeout(5) do
-        consumer_class.consume
       end
       expect(collected).to eq [message]
     end
@@ -131,8 +124,15 @@ describe Evrone::Common::AMQP::Consumer do
       mock(Hash).from_json(message.to_json) { 'from model' }
       consumer_class.model Hash
 
-      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
+      consumer_perform do |payload|
         collected << payload
+      end
+      expect(collected).to eq ['from model']
+    end
+
+    def consumer_perform(&block)
+      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
+        block.call payload
         sess.class.shutdown
         delete_queue queue
         delete_exchange exch
@@ -141,7 +141,6 @@ describe Evrone::Common::AMQP::Consumer do
       Timeout.timeout(5) do
         consumer_class.consume
       end
-      expect(collected).to eq ['from model']
     end
   end
 

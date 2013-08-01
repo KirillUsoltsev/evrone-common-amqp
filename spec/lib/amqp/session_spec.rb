@@ -117,9 +117,16 @@ describe Evrone::Common::AMQP::Session do
 
     it "should subscribe to queue and receive message" do
       collected = []
+      session_subscribe do |payload|
+        collected << payload
+      end
+      expect(collected).to eq [message]
+    end
+
+    def session_subscribe(&block)
       Timeout.timeout(5) do
         conn.subscribe exch_name, queue_name do |_, _, received|
-          collected << received
+          block.call received
           described_class.shutdown
 
           delete_queue queue
@@ -127,7 +134,6 @@ describe Evrone::Common::AMQP::Session do
           ch.close
         end
       end
-      expect(collected).to eq [message]
     end
   end
 
