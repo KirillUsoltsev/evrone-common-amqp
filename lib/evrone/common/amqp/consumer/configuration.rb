@@ -5,55 +5,56 @@ module Evrone
     module AMQP
       module Consumer::Configuration
 
-        def configuration
-          @configuration ||= reset_configuration!
+        def consumer_configuration
+          @consumer_configuration ||= reset_consumer_configuration!
         end
 
-        def reset_configuration!
-          @configuration = OpenStruct.new exchange: OpenStruct.new, queue: OpenStruct.new
+        def reset_consumer_configuration!
+          @consumer_configuration = OpenStruct.new(exchange: OpenStruct.new(options: {}),
+                                                   queue:    OpenStruct.new(options: {}))
         end
 
         def exchange(*name)
           options = name.last.is_a?(Hash) ? name.pop : {}
-          configuration.exchange.name    = name.first
-          configuration.exchange.options = options
+          consumer_configuration.exchange.name    = name.first
+          consumer_configuration.exchange.options = options
         end
 
         def queue(*name)
           options = name.last.is_a?(Hash) ? name.pop : {}
-          configuration.queue.name = name.first
-          configuration.queue.options = options
+          consumer_configuration.queue.name = name.first
+          consumer_configuration.queue.options = options
         end
 
         def routing_key(name = nil)
-          configuration.routing_key = name if name
-          configuration.routing_key
+          consumer_configuration.routing_key = name if name
+          consumer_configuration.routing_key
         end
 
         def headers(values = nil)
-          configuration.headers = values unless values == nil
-          configuration.headers
+          consumer_configuration.headers = values unless values == nil
+          consumer_configuration.headers
         end
 
         def model(value = nil)
-          configuration.model = value unless value == nil
-          configuration.model
+          consumer_configuration.model = value unless value == nil
+          consumer_configuration.model
         end
 
         def exchange_name
-          configuration.exchange.name || consumer_name
+          consumer_configuration.exchange.name || consumer_name
         end
 
         def exchange_options
-          configuration.exchange.options || {}
+          consumer_configuration.exchange.options
         end
 
         def queue_name
-          configuration.queue.name || consumer_name
+          consumer_configuration.queue.name || consumer_name
         end
 
         def queue_options
-          configuration.queue.options || {}
+          consumer_configuration.queue.options
         end
       end
     end

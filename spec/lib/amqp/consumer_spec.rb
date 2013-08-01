@@ -12,9 +12,15 @@ describe Evrone::Common::AMQP::Consumer do
 
   subject { consumer }
 
-  before { consumer_class.reset_configuration! }
+  before { consumer_class.reset_consumer_configuration! }
+
+  context "consumer_name" do
+    subject { consumer_class.consumer_name }
+    it { should eq 'evrone.consumer.test' }
+  end
 
   context '(configuration)' do
+
     subject { consumer_class }
 
     context "model" do
@@ -85,108 +91,33 @@ describe Evrone::Common::AMQP::Consumer do
     end
   end
 
-  context "consume" do
-    let(:sess)        { consumer_class.session }
-    let(:ch)          { sess.conn.create_channel }
-    let(:exch_name)   { :foo }
-    let(:queue_name)  { :bar }
-    let(:routing_key) { 'routing.key' }
-    let(:message)     { { 'key' =>  'value' } }
-
-    let(:queue)       { sess.declare_queue queue_name }
-    let(:exch)        { sess.declare_exchange exch_name }
-    let(:collected)   { [] }
-
-    before do
-      consumer_class.exchange    exch_name
-      consumer_class.queue       queue_name
-      consumer_class.routing_key routing_key
-
-      sess.open
-      queue.bind exch, routing_key: routing_key
-      body = Evrone::Common::AMQP::Message::Body.new(message)
-      exch.publish body.serialized, routing_key: routing_key, content_type: body.content_type
-      sleep 0.25
-    end
+  context "(publish)" do
+    let(:x_name)  { consumer_class.exchange_name      }
+    let(:q_name)  { consumer_class.queue_name         }
+    let(:sess)    { consumer_class.session.open       }
+    let(:ch)      { sess.conn.create_channel          }
+    let(:q)       { sess.declare_queue q_name, channel: ch    }
+    let(:x)       { sess.declare_exchange x_name, channel: ch }
+    let(:message) { { 'key' => 'value' }              }
 
     after do
+      delete_queue q
+      delete_exchange x
       sess.close
     end
 
-    it "should receive message" do
-      consumer_perform do |payload|
-        collected << payload
-      end
-      expect(collected).to eq [message]
-    end
-
-    it "should deserialize from model" do
-      mock(Hash).from_json(message.to_json) { 'from model' }
-      consumer_class.model Hash
-
-      consumer_perform do |payload|
-        collected << payload
-      end
-      expect(collected).to eq ['from model']
-    end
-
-    def consumer_perform(&block)
-      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
-        block.call payload
-        sess.class.shutdown
-        delete_queue queue
-        delete_exchange exch
-        ch.close
-      end
-      Timeout.timeout(5) do
-        consumer_class.consume
-      end
-    end
-  end
-
-  context "publish" do
-    let(:sess)        { consumer_class.session }
-    let(:ch)          { sess.conn.create_channel }
-    let(:exch_name)    { :foo }
-    let(:exch_options) { { type: :fanout } }
-    let(:queue_name)  { :bar }
-    let(:routing_key) { 'routing.key' }
-    let(:message)     { { 'key' =>  'value' } }
-
-    let(:queue)       { sess.declare_queue queue_name }
-    let(:exch)        { sess.declare_exchange exch_name, exch_options }
-    let(:collected)   { [] }
-
     before do
-      consumer_class.exchange    exch_name, exch_options
-      consumer_class.queue       queue_name
-      consumer_class.routing_key routing_key
+      q.bind x
+    end
 
-      sess.open
-      queue.bind exch, routing_key: routing_key
-      consumer_class.publish(message)
+    it "should publish message to exchange using settings from consumer" do
+      consumer_class.publish message
       sleep 0.25
-    end
-
-    after do
-      delete_queue queue
-      delete_exchange exch
-      sess.close
-    end
-
-    subject { queue }
-
-    its(:message_count) { should eq 1 }
-    its("pop.last")      { should eq message.to_json }
-
-    it "should have content_type header" do
-      expect(queue.pop[1][:content_type]).to eq 'application/json'
+      expect(q.message_count).to eq 1
+      _, _, expected = q.pop
+      expect(expected).to eq message.to_json
     end
   end
 
-  context "consumer_name" do
-    subject { consumer_class.consumer_name }
-    it { should eq 'evrone.consumer.test' }
-  end
 
 end

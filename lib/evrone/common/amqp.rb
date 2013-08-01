@@ -1,5 +1,4 @@
 require File.expand_path("../amqp/version", __FILE__)
-require File.expand_path("../amqp/ext/object/to_amqp_message", __FILE__)
 
 module Evrone
   module Common
