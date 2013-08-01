@@ -32,6 +32,10 @@ module Evrone
             Common::AMQP.session
           end
 
+          def config
+            Common::AMQP.config
+          end
+
           private
 
             def declare_exchange

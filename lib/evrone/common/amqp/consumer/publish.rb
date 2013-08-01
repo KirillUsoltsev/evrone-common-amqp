@@ -4,6 +4,8 @@ module Evrone
       module Consumer::Publish
 
         def publish(message, options = nil)
+          session.open
+
           m  = Common::AMQP::Message.new(message, options)
           x  = declare_exchange
 

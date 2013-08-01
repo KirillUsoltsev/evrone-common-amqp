@@ -28,18 +28,17 @@ module Evrone
             conn.close
             warn "close connection"
           end
-          @conn = nil
-          self
         end
 
         def open
+          self.class.resume
+
           @conn ||= begin
-            self.class.resume
-
             @conn = ::Bunny.new config.url,
-              heartbeat: config.heartbeat,
-              logger:    config.logger
+              heartbeat: config.heartbeat
+          end
 
+          unless @conn.open?
             warn "connecting to #{conn_info}"
             @conn.start
             warn "connected successfuly (#{server_name})"

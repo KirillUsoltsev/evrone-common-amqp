@@ -50,11 +50,7 @@ describe Evrone::Common::AMQP::Session do
 
   context "close" do
     it "should close connection" do
-      expect{ sess.close }.to change{ sess.conn }.to(nil)
-    end
-
-    it "should change open? to false" do
-      expect{ sess.close }.to change{ sess.open? }.from(true).to(nil)
+      expect{ sess.close }.to change{ sess.open? }.from(true).to(false)
     end
   end
 

@@ -20,11 +20,13 @@ describe Evrone::Common::AMQP::Consumer do
 
   before { consumer_class.reset_consumer_configuration! }
 
+
   context '(configuration)' do
 
     subject { consumer_class }
 
     its(:consumer_name) { should eq 'evrone.test.consumer' }
+    its(:config)        { should be_an_instance_of(Evrone::Common::AMQP::Config) }
 
     context "model" do
       subject { consumer_class.model }
