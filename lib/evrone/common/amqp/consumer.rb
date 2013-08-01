@@ -42,7 +42,7 @@ module Evrone
           end
 
           def subscription_loop(delivery_info, properties, payload)
-            message = Message::Body.deserialize payload, properties
+            message = Message::Body.deserialize payload, properties, model: model
             create_object.perform message, properties
           end
 

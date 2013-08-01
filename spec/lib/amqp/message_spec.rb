@@ -24,6 +24,30 @@ describe Evrone::Common::AMQP::Message do
     its(:content_type)  { should eq 'application/json' }
   end
 
+  context 'deserialize' do
+    let(:body) { described_class.const_get(:Body) }
+    let(:hash) { { 'key' => 'value'} }
+
+    it "string" do
+      expect(
+        body.deserialize('foo', content_type: 'text/plain')
+      ).to eq 'foo'
+    end
+
+    it "Hash" do
+      expect(
+        body.deserialize(hash.to_json, content_type: "application/json")
+      ).to eq hash
+    end
+
+    it "when pass :model option" do
+      mock(Hash).from_json(hash.to_json) { hash }
+      expect(
+        body.deserialize(hash.to_json, {}, {model: Hash})
+      ).to eq hash
+    end
+  end
+
   context "publish" do
     let(:conn)       { Evrone::Common::AMQP.open }
     let(:exch_name)  { 'foo' }

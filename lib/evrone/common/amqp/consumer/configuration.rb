@@ -31,8 +31,13 @@ module Evrone
         end
 
         def headers(values = nil)
-          configuration.headers = values if values
+          configuration.headers = values unless values == nil
           configuration.headers
+        end
+
+        def model(value = nil)
+          configuration.model = value unless value == nil
+          configuration.model
         end
 
         def exchange_name

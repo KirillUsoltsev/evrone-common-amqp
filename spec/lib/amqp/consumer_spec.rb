@@ -17,6 +17,19 @@ describe Evrone::Common::AMQP::Consumer do
   context '(configuration)' do
     subject { consumer_class }
 
+    context "model" do
+      subject { consumer_class.model }
+
+      it "by default should be nil" do
+        expect(subject).to be_nil
+      end
+
+      it 'when set model should be' do
+        consumer_class.model Hash
+        expect(subject).to eq Hash
+      end
+    end
+
     context "exchange_name" do
       subject { consumer_class.exchange_name }
 
@@ -114,6 +127,22 @@ describe Evrone::Common::AMQP::Consumer do
       expect(collected).to eq [message]
     end
 
+    it "should deserialize from model" do
+      mock(Hash).from_json(message.to_json) { 'from model' }
+      consumer_class.model Hash
+
+      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
+        collected << payload
+        sess.class.shutdown
+        delete_queue queue
+        delete_exchange exch
+        ch.close
+      end
+      Timeout.timeout(5) do
+        consumer_class.consume
+      end
+      expect(collected).to eq ['from model']
+    end
   end
 
   context "publish" do
