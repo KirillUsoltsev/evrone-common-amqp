@@ -1,21 +1,32 @@
 require 'spec_helper'
 require 'timeout'
 
+class Evrone::TestConsumer
+  include Evrone::Common::AMQP::Consumer
+
+  def perform(message, properties)
+    Thread.current[:collected] ||= []
+    Thread.current[:collected] << message
+    :shutdown if Thread.current[:collected].size == 3
+  end
+end
+
 describe Evrone::Common::AMQP::Consumer do
 
-  class Evrone::ConsumerTest
-    include Evrone::Common::AMQP::Consumer
-  end
-
-  let(:consumer) { Evrone::ConsumerTest.new }
+  let(:consumer) { Evrone::TestConsumer.new }
   let(:consumer_class) { consumer.class }
 
   subject { consumer }
 
-  before { consumer_class.reset_configuration! }
+  before { consumer_class.reset_consumer_configuration! }
+
 
   context '(configuration)' do
+
     subject { consumer_class }
+
+    its(:consumer_name) { should eq 'evrone.test.consumer' }
+    its(:config)        { should be_an_instance_of(Evrone::Common::AMQP::Config) }
 
     context "model" do
       subject { consumer_class.model }
@@ -85,108 +96,62 @@ describe Evrone::Common::AMQP::Consumer do
     end
   end
 
-  context "consume" do
-    let(:sess)        { consumer_class.session }
-    let(:ch)          { sess.conn.create_channel }
-    let(:exch_name)   { :foo }
-    let(:queue_name)  { :bar }
-    let(:routing_key) { 'routing.key' }
-    let(:message)     { { 'key' =>  'value' } }
-
-    let(:queue)       { sess.declare_queue queue_name }
-    let(:exch)        { sess.declare_exchange exch_name }
-    let(:collected)   { [] }
-
-    before do
-      consumer_class.exchange    exch_name
-      consumer_class.queue       queue_name
-      consumer_class.routing_key routing_key
-
-      sess.open
-      queue.bind exch, routing_key: routing_key
-      body = Evrone::Common::AMQP::Message::Body.new(message)
-      exch.publish body.serialized, routing_key: routing_key, content_type: body.content_type
-      sleep 0.25
-    end
+  context "(publish)" do
+    let(:x_name)  { consumer_class.exchange_name      }
+    let(:q_name)  { consumer_class.queue_name         }
+    let(:sess)    { consumer_class.session.open       }
+    let(:ch)      { sess.conn.create_channel          }
+    let(:q)       { sess.declare_queue q_name, channel: ch    }
+    let(:x)       { sess.declare_exchange x_name, channel: ch }
+    let(:message) { { 'key' => 'value' }              }
 
     after do
+      delete_queue q
+      delete_exchange x
       sess.close
     end
 
-    it "should receive message" do
-      consumer_perform do |payload|
-        collected << payload
-      end
-      expect(collected).to eq [message]
+    before do
+      q.bind x
     end
 
-    it "should deserialize from model" do
-      mock(Hash).from_json(message.to_json) { 'from model' }
-      consumer_class.model Hash
-
-      consumer_perform do |payload|
-        collected << payload
-      end
-      expect(collected).to eq ['from model']
-    end
-
-    def consumer_perform(&block)
-      mock(consumer_class).create_object.mock!.perform(anything, anything) do |payload|
-        block.call payload
-        sess.class.shutdown
-        delete_queue queue
-        delete_exchange exch
-        ch.close
-      end
-      Timeout.timeout(5) do
-        consumer_class.consume
-      end
+    it "should publish message to exchange using settings from consumer" do
+      consumer_class.publish message
+      sleep 0.25
+      expect(q.message_count).to eq 1
+      _, _, expected = q.pop
+      expect(expected).to eq message.to_json
     end
   end
 
-  context "publish" do
-    let(:sess)        { consumer_class.session }
-    let(:ch)          { sess.conn.create_channel }
-    let(:exch_name)    { :foo }
-    let(:exch_options) { { type: :fanout } }
-    let(:queue_name)  { :bar }
-    let(:routing_key) { 'routing.key' }
-    let(:message)     { { 'key' =>  'value' } }
 
-    let(:queue)       { sess.declare_queue queue_name }
-    let(:exch)        { sess.declare_exchange exch_name, exch_options }
-    let(:collected)   { [] }
-
-    before do
-      consumer_class.exchange    exch_name, exch_options
-      consumer_class.queue       queue_name
-      consumer_class.routing_key routing_key
-
-      sess.open
-      queue.bind exch, routing_key: routing_key
-      consumer_class.publish(message)
-      sleep 0.25
-    end
+  context '(subscribe)' do
+    let(:x_name)  { consumer_class.exchange_name      }
+    let(:q_name)  { consumer_class.queue_name         }
+    let(:sess)    { consumer_class.session.open       }
+    let(:ch)      { sess.conn.create_channel          }
+    let(:q)       { sess.declare_queue q_name, channel: ch    }
+    let(:x)       { sess.declare_exchange x_name, channel: ch }
 
     after do
-      delete_queue queue
-      delete_exchange exch
+      delete_queue q
+      delete_exchange x
       sess.close
     end
 
-    subject { queue }
+    before do
+      q.bind(x)
+      3.times { |n| x.publish "n#{n}" }
+    end
 
-    its(:message_count) { should eq 1 }
-    its("pop.last")      { should eq message.to_json }
+    subject { Thread.current[:collected] }
 
-    it "should have content_type header" do
-      expect(queue.pop[1][:content_type]).to eq 'application/json'
+    it "should receive messages" do
+      Timeout.timeout(3) do
+        consumer_class.subscribe
+      end
+      expect(subject).to have(3).items
+      expect(subject).to eq %w{ n0 n1 n2 }
     end
   end
-
-  context "consumer_name" do
-    subject { consumer_class.consumer_name }
-    it { should eq 'evrone.consumer.test' }
-  end
-
 end

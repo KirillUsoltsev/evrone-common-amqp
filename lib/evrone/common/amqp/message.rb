@@ -1,49 +1,57 @@
+require 'json'
+
 module Evrone
   module Common
     module AMQP
       class Message
 
-        autoload :Body, File.expand_path("../message/body", __FILE__)
-
-        include Helper::Session
-
         attr_reader :body, :options
 
-        def initialize(body, options = nil)
-          @body              = Body.new body
-          @options           = options || {}
+        class << self
+          def deserialize(message, properties)
+            case properties[:content_type]
+            when 'application/json'
+              ::JSON.parse message
+            else
+              message
+            end
+          end
         end
 
-        def routing_key
-          options[:routing_key]
+        def initialize(body, options = nil)
+          @body            = body
+          @options         = options || {}
         end
 
         def content_type
-          @options[:content_type] || @body.content_type
+          options[:content_type]
         end
 
-        def serialized
-          body.serialized
-        end
-
-        def publish(*args)
-          exch_name, exch_options = extract_exch_name_and_options(*args)
-
-          options.merge! content_type: content_type
-
-          session.publish exch_name,
-                          serialized,
-                          options.merge(exchange: exch_options)
-          self
+        def serialize
+          @serialied_body ||= ( try_serialize_strings ||
+                                try_serialize_using_to_json   ||
+                                default_serializer )
         end
 
         private
 
-          def extract_exch_name_and_options(*args)
-            exch_options = args.last.is_a?(Hash) ? args.pop : {}
+          def try_serialize_strings
+            if @body.is_a?(String)
+              options[:content_type] ||= 'text/plain'
+              @body
+            end
+          end
 
-            exch_name = args.first
-            [exch_name, exch_options]
+          def try_serialize_using_to_json
+            if @object.respond_to?(:to_json)
+              options[:content_type] ||= 'application/json'
+              @body.to_json
+            end
+          end
+
+          def default_serializer
+            options[:content_type] ||= 'text/plain'
+            @body.to_s
           end
       end
     end
