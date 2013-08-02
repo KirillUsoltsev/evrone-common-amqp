@@ -3,6 +3,7 @@ require File.expand_path("../amqp/version", __FILE__)
 module Evrone
   module Common
     module AMQP
+
       autoload :Config,     File.expand_path("../amqp/config",     __FILE__)
       autoload :Session,    File.expand_path("../amqp/session",    __FILE__)
       autoload :Consumer,   File.expand_path("../amqp/consumer",   __FILE__)

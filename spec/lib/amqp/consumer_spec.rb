@@ -25,7 +25,7 @@ describe Evrone::Common::AMQP::Consumer do
 
     subject { consumer_class }
 
-    its(:consumer_name) { should eq 'evrone.test.consumer' }
+    its(:consumer_name) { should eq 'evrone.test' }
     its(:config)        { should be_an_instance_of(Evrone::Common::AMQP::Config) }
 
     context "model" do
@@ -97,30 +97,105 @@ describe Evrone::Common::AMQP::Consumer do
   end
 
   context "(publish)" do
-    let(:x_name)  { consumer_class.exchange_name      }
-    let(:q_name)  { consumer_class.queue_name         }
-    let(:sess)    { consumer_class.session.open       }
-    let(:ch)      { sess.conn.create_channel          }
-    let(:q)       { sess.declare_queue q_name, channel: ch    }
-    let(:x)       { sess.declare_exchange x_name, channel: ch }
-    let(:message) { { 'key' => 'value' }              }
 
-    after do
-      delete_queue q
-      delete_exchange x
-      sess.close
+    context "options" do
+      let(:message)          { 'message' }
+      let(:expected_options) { {} }
+      let(:options)          { {} }
+      let(:x)                { OpenStruct.new name: "name" }
+
+      subject{ consumer_class.publish message, options }
+
+      before do
+        mock(consumer_class).declare_exchange { x }
+        mock(x).publish(message, expected_options)
+      end
+
+      context "routing_key" do
+        context "by default" do
+          it { should be }
+        end
+
+        context "when exists in configuration" do
+          let(:expected_options) { { routing_key: 'routing.key' } }
+          before do
+            consumer_class.routing_key 'routing.key'
+          end
+          it { should be }
+        end
+
+        context "when exists in options" do
+          let(:expected_options) { { routing_key: 'routing.key' } }
+          let(:options)          { { routing_key: 'routing.key' } }
+          it { should be }
+        end
+
+        context "when exists in options and configuration" do
+          let(:expected_options) { { routing_key: 'options.key' } }
+          let(:options)          { { routing_key: 'options.key' } }
+          before do
+            consumer_class.routing_key 'configuration.key'
+          end
+          it { should be }
+        end
+      end
+
+      context "headers" do
+        context "by default" do
+          it { should be }
+        end
+
+        context "when exists in configuration" do
+          let(:expected_options) { { headers: 'key' } }
+          before do
+            consumer_class.headers 'key'
+          end
+          it { should be }
+        end
+
+        context "when exists in options" do
+          let(:expected_options) { { headers: 'key' } }
+          let(:options)          { { headers: 'key' } }
+          it { should be }
+        end
+
+        context "when exists in options and configuration" do
+          let(:expected_options) { { headers: 'options' } }
+          let(:options)          { { headers: 'options' } }
+          before do
+            consumer_class.headers 'configuration'
+          end
+          it { should be }
+        end
+      end
     end
 
-    before do
-      q.bind x
-    end
+    context "real run" do
+      let(:x_name)  { consumer_class.exchange_name      }
+      let(:q_name)  { consumer_class.queue_name         }
+      let(:sess)    { consumer_class.session.open       }
+      let(:ch)      { sess.conn.create_channel          }
+      let(:q)       { sess.declare_queue q_name, channel: ch    }
+      let(:x)       { sess.declare_exchange x_name, channel: ch }
+      let(:message) { { 'key' => 'value' } }
 
-    it "should publish message to exchange using settings from consumer" do
-      consumer_class.publish message
-      sleep 0.25
-      expect(q.message_count).to eq 1
-      _, _, expected = q.pop
-      expect(expected).to eq message.to_json
+      after do
+        delete_queue q
+        delete_exchange x
+        sess.close
+      end
+
+      before do
+        q.bind x
+      end
+
+      it "should publish message to exchange using settings from consumer" do
+        consumer_class.publish message
+        sleep 0.25
+        expect(q.message_count).to eq 1
+        _, _, expected = q.pop
+        expect(expected).to eq message.to_json
+      end
     end
   end
 

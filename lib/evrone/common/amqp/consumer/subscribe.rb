@@ -10,7 +10,10 @@ module Evrone
             x = declare_exchange
             q = declare_queue
 
-            bind_options = { routing_key: routing_key, headers: headers }
+            bind_options = {}
+            bind_options[:routing_key] = routing_key if routing_key
+            bind_options[:headers]     = headers     if headers
+
             session.info "#{to_s} subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
             q.bind(x, bind_options)
             session.info "#{to_s} successfuly subscribed to #{q.name}:#{x.name}"

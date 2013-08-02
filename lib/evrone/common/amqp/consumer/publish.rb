@@ -6,12 +6,12 @@ module Evrone
         def publish(message, options = nil)
           session.open
 
+          options ||= {}
+          options[:routing_key] = routing_key if routing_key && !options.key?(:routing_key)
+          options[:headers]     = headers     if headers && !options.key?(:headers)
+
           m  = Common::AMQP::Message.new(message, options)
           x  = declare_exchange
-
-          options ||= {}
-          options[:routing_key] ||= routing_key
-          options[:headers]     ||= headers
 
           session.debug "#{to_s} publishing #{message.inspect} to #{x.name}"
           x.publish m.serialize, m.options

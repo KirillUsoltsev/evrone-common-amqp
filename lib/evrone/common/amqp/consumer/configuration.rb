@@ -58,7 +58,10 @@ module Evrone
         end
 
         def consumer_name
-          @consumer_name ||= to_s.scan(/[A-Z][a-z]*/).join("_").downcase.gsub(/_/, '.')
+          @consumer_name ||= to_s.scan(/[A-Z][a-z]*/).join("_")
+                                 .downcase
+                                 .gsub(/_/, '.')
+                                 .gsub(/\.consumer$/, '')
         end
 
       end

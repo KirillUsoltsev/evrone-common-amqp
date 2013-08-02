@@ -120,10 +120,6 @@ module Evrone
             [name, config.default_queue_options.merge(options || {})]
           end
 
-          def assert_connection_is_open
-            open
-          end
-
       end
     end
   end
