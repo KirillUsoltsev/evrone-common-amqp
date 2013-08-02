@@ -4,6 +4,7 @@ module Evrone
   module Common
     module AMQP
       module Testing
+
         extend self
 
         def messages
@@ -20,13 +21,12 @@ module Evrone
         end
       end
 
-      class Message
+      module Consumer::Publish
         alias_method :real_publish, :publish
 
-        def publish(*args)
-          exch_name, _ = extract_exch_name_and_options(*args)
-          Testing.exchange_messages[exch_name] << body.object
-          Testing.messages << body.object
+        def publish(message, options = {})
+          Testing.exchange_messages[exchange_name] << message
+          Testing.messages << message
           self
         end
       end
