@@ -33,17 +33,14 @@ module Evrone
         def open
           self.class.resume
 
-          @conn ||= begin
-            @conn = ::Bunny.new config.url,
-              heartbeat: :server
+          @conn ||= Bunny.new config.url, heartbeat: :server
+
+          unless conn.open?
+            warn "connecting to #{conn_info}"
+            conn.start
+            warn "connected successfuly (#{server_name})"
           end
 
-          unless @conn.open?
-            warn "connecting to #{conn_info}"
-            @conn.start
-            warn "connected successfuly (#{server_name})"
-            @conn
-          end
           self
         end
 
