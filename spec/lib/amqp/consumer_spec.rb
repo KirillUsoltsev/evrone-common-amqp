@@ -41,6 +41,24 @@ describe Evrone::Common::AMQP::Consumer do
       end
     end
 
+    context "bind_options" do
+      subject { consumer_class.bind_options }
+
+      context "by default should eq {}" do
+        it { should eq ({}) }
+      end
+
+      context "set routing_key" do
+        before { consumer_class.routing_key 'key' }
+        it { should eq({routing_key: 'key'}) }
+      end
+
+      context "set headers" do
+        before { consumer_class.headers 'key' }
+        it { should eq({headers: 'key'}) }
+      end
+    end
+
     context "exchange_name" do
       subject { consumer_class.exchange_name }
 

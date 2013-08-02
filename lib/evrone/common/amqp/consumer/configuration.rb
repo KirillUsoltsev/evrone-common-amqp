@@ -64,6 +64,15 @@ module Evrone
                                  .gsub(/\.consumer$/, '')
         end
 
+        def bind_options
+          consumer_configuration.bind_options ||= begin
+            opts = {}
+            opts[:routing_key] = routing_key if routing_key
+            opts[:headers]     = headers     if headers
+            opts
+          end
+        end
+
       end
     end
   end
