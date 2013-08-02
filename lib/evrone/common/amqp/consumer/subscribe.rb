@@ -10,19 +10,19 @@ module Evrone
             x = declare_exchange
             q = declare_queue
 
-            session.info "#{consumer_name} subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
-            q.bind(x, bind_options)
-            session.info "#{consumer_name} successfuly subscribed to #{q.name}:#{x.name}"
+            log_subscription q, x do
+              q.bind(x, bind_options)
+            end
 
-            queue_subscription_loop q
+            subscription_loop q
 
-            session.info "#{to_s} shutdown"
+            session.info "#{consumer_name} shutdown"
           end
         end
 
         private
 
-          def queue_subscription_loop(q)
+          def subscription_loop(q)
             loop do
               break if shutdown?
 
@@ -41,6 +41,12 @@ module Evrone
                 sleep config.pool_timeout
               end
             end
+          end
+
+          def log_subscription(q, x)
+            session.info "#{consumer_name} subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
+            yield
+            session.info "#{consumer_name} successfuly subscribed to #{q.name}:#{x.name}"
           end
 
           def log_received_message(delivery_info, payload)

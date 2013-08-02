@@ -15,7 +15,7 @@ module Evrone
         end
 
         %w{ exchange queue }.each do |m|
-          define_method m do |*args|
+          define_method m do |*name|
             options = name.last.is_a?(Hash) ? name.pop : {}
             consumer_configuration.__send__(m).name    = name.first
             consumer_configuration.__send__(m).options = options
