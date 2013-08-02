@@ -29,10 +29,10 @@ module Evrone
 
               delivery_info, properties, payload = q.pop(ack: true)
               if payload
-                session.warn "#{to_s} receive ##{delivery_info.delivery_tag} #{payload.inspect}"
+                session.debug "#{to_s} receive ##{delivery_info.delivery_tag} #{payload.inspect}"
                 result = run_instance delivery_info, properties, payload
                 session.channel.ack delivery_info.delivery_tag, false
-                session.warn "#{to_s} commit ##{delivery_info.delivery_tag}"
+                session.debug "#{to_s} commit ##{delivery_info.delivery_tag}"
 
                 break if result == :shutdown
               else
