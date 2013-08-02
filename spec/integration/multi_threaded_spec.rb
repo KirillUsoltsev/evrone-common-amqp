@@ -63,7 +63,7 @@ describe "Run in multithread environment" do
     30.times do |n|
       Evrone::Alice.publish "n#{n}"
     end
-    sleep 3
+    sleep 5
 
     Evrone::Common::AMQP.shutdown
     Timeout.timeout(10) { ths.map{|i| i.join } }
