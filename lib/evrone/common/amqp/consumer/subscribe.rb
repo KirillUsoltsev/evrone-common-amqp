@@ -45,15 +45,15 @@ module Evrone
           end
 
           def log_subscription(q, x)
-            session.warn "#{consumer_name} subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
+            session.warn "#{to_s} subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
             yield
-            session.warn "#{consumer_name} successfuly subscribed to #{q.name}:#{x.name}"
+            session.warn "#{to_s} successfuly subscribed to #{q.name}:#{x.name}"
           end
 
           def log_received_message(delivery_info, payload)
-            session.info "#{consumer_name} receive ##{delivery_info.delivery_tag} #{payload.inspect}"
+            session.info "#{to_s} receive ##{delivery_info.delivery_tag} #{payload.inspect}"
             yield
-            session.info "#{consumer_name} done ##{delivery_info.delivery_tag}"
+            session.info "#{to_s} done ##{delivery_info.delivery_tag}"
           end
 
           def run_instance(delivery_info, properties, payload)

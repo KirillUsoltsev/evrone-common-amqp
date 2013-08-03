@@ -52,6 +52,7 @@ module Evrone
 
           def spawn
             Thread.current[:actor_number] = @number
+            Evrone::Common::AMQP.logger.warn "spawn consumer #{@klass.to_s}##{@number}"
             info "spawn task ##{@number} #{@klass.to_s}"
             @klass.subscribe
           end
