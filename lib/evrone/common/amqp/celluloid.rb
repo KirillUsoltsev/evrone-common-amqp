@@ -13,6 +13,12 @@ module Evrone
         class << self
 
           def spawn_async(workers)
+            spawn workers, async: true
+          end
+
+          def spawn(workers, options = {})
+            async = options.key?(:async) ? options[:async] : false
+
             Common::AMQP.open
 
             supervisor = ::Celluloid::SupervisionGroup.run!
@@ -23,10 +29,10 @@ module Evrone
                 supervisor.supervise_as name, Worker, klass, n
               end
             end
-          end
 
-          def spawn(*args)
-            spawn_async(*args).each(&:value)
+            if !async
+              supervisor.wait(:exit)
+            end
           end
 
         end
