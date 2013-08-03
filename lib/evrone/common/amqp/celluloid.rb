@@ -1,14 +1,14 @@
 require 'thread'
 require 'celluloid'
 
+trap("INT") { Evrone::Common::AMQP.shutdown }
+
+::Celluloid.logger = Common::AMQP.config.logger
+
 module Evrone
   module Common
     module AMQP
       module Celluloid
-
-        ::Celluloid.logger = Common::AMQP.config.logger
-
-        trap("INT") { Evrone::Common::AMQP.shutdown }
 
         class << self
 
@@ -31,8 +31,10 @@ module Evrone
             end
 
             if !async
-              supervisor.wait(:exit)
+              ::Celluloid.sleep 1 while !Common::AMQP.shutdown?
             end
+
+            ::Celluloid.shutdown
           end
 
         end
@@ -41,8 +43,6 @@ module Evrone
 
           include ::Celluloid
           include ::Celluloid::Logger
-
-          #task_class TaskThread
 
           def initialize(klass, number)
             @number = number
