@@ -18,7 +18,7 @@ module Evrone
 
             subscription_loop q
 
-            session.warn "#{consumer_name} shutdown"
+            session.warn "#{to_s} shutdown"
           end
         end
 
