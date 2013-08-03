@@ -2,6 +2,7 @@ require 'spec_helper'
 require 'thread'
 require 'timeout'
 
+
 class Evrone::Bob
   include Evrone::Common::AMQP::Consumer
 
@@ -22,7 +23,8 @@ class Evrone::Alice
   end
 end
 
-describe "Run in multithread environment" do
+describe "Run in multithread environment", slow: true do
+  let(:num_messages) { 100 }
   let(:c_first) { Evrone::Alice }
   let(:c_last)  { Evrone::Bob }
   let(:sess)    { Evrone::Common::AMQP.open }
@@ -34,9 +36,9 @@ describe "Run in multithread environment" do
   let(:q_last)  { sess.send :declare_queue, c_last.queue_name, channel: ch }
 
   before do
-    [x_first, x_last, q_first, q_last]
-    $mtest_collected = []
     $mtest_mutex = Mutex.new
+    $mtest_collected = []
+    [x_first, x_last, q_first, q_last]
   end
 
   after do
@@ -52,23 +54,34 @@ describe "Run in multithread environment" do
   end
 
   it "should be successfuly" do
-    ths = (0..6).map do |i|
+    ths = (0..12).map do |i|
       klass = (i % 2 == 0) ? Evrone::Alice : Evrone::Bob
       Thread.new do
         klass.subscribe
       end
     end
-    sleep 0.25
+    sleep 0.5
 
-    30.times do |n|
+    num_messages.times do |n|
       Evrone::Alice.publish "n#{n}"
     end
-    sleep 5
+
+    Timeout.timeout(60) do
+      loop do
+        stop = false
+        $mtest_mutex.synchronize do
+          puts $mtest_collected.size
+          stop = true if $mtest_collected.size >= num_messages
+        end
+        break if stop
+        sleep 2
+      end
+    end
 
     Evrone::Common::AMQP.shutdown
     Timeout.timeout(10) { ths.map{|i| i.join } }
 
-    expect($mtest_collected.sort).to eq (0..29).map{|i| "n#{i}" }.sort
+    expect($mtest_collected.sort).to eq (0...num_messages).map{|i| "n#{i}" }.sort
   end
 
 end

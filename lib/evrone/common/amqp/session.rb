@@ -1,4 +1,5 @@
 require 'bunny'
+require 'thread'
 
 module Evrone
   module Common
@@ -6,6 +7,8 @@ module Evrone
       class Session
 
         CHANNEL_KEY = :evrone_amqp_channel
+
+        @@session_lock = Mutex.new
 
         attr_reader :conn
 
@@ -31,14 +34,18 @@ module Evrone
         end
 
         def open
-          self.class.resume
+          return self if conn && conn.open?
 
-          @conn ||= Bunny.new config.url, heartbeat: :server
+          @@session_lock.synchronize do
+            self.class.resume
 
-          unless conn.open?
-            warn "connecting to #{conn_info}"
-            conn.start
-            warn "connected successfuly (#{server_name})"
+            @conn ||= Bunny.new config.url, heartbeat: :server
+
+            unless conn.open?
+              warn "connecting to #{conn_info}"
+              conn.start
+              warn "connected successfuly (#{server_name})"
+            end
           end
 
           self

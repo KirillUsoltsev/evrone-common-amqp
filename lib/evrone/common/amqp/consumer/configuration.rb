@@ -1,17 +1,24 @@
 require 'ostruct'
+require 'thread'
 
 module Evrone
   module Common
     module AMQP
       module Consumer::Configuration
 
+        @@consumer_configuration_lock = Mutex.new
+
         def consumer_configuration
-          @consumer_configuration ||= reset_consumer_configuration!
+          @consumer_configuration || reset_consumer_configuration!
         end
 
         def reset_consumer_configuration!
-          @consumer_configuration = OpenStruct.new(exchange: OpenStruct.new(options: {}),
-                                                   queue:    OpenStruct.new(options: {}))
+          @@consumer_configuration_lock.synchronize do
+            @consumer_configuration =
+              OpenStruct.new(exchange:      OpenStruct.new(options: {}),
+                             queue:         OpenStruct.new(options: {}),
+                             consumer_name: make_consumer_name)
+          end
         end
 
         %w{ exchange queue }.each do |m|
@@ -46,20 +53,27 @@ module Evrone
         end
 
         def consumer_name
-          @consumer_name ||= to_s.scan(/[A-Z][a-z]*/).join("_")
-                                 .downcase
-                                 .gsub(/_/, '.')
-                                 .gsub(/\.consumer$/, '')
+          consumer_configuration.consumer_name
         end
 
         def bind_options
-          consumer_configuration.bind_options ||= begin
-            opts = {}
-            opts[:routing_key] = routing_key if routing_key
-            opts[:headers]     = headers     if headers
-            opts
-          end
+          consumer_configuration.bind_options ||
+            @@consumer_configuration_lock.synchronize do
+              opts = {}
+              opts[:routing_key] = routing_key if routing_key
+              opts[:headers]     = headers     if headers
+              consumer_configuration.bind_options = opts
+            end
         end
+
+        private
+
+          def make_consumer_name
+            to_s.scan(/[A-Z][a-z]*/).join("_")
+                .downcase
+                .gsub(/_/, '.')
+                .gsub(/\.consumer$/, '')
+          end
 
       end
     end

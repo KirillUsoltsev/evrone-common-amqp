@@ -10,11 +10,9 @@ module Evrone
         autoload :Subscribe,     File.expand_path("../consumer/subscribe",     __FILE__)
 
         def self.included(base)
-
           base.extend Consumer::Configuration
           base.extend Consumer::Publish
           base.extend Consumer::Subscribe
-
           base.extend ClassMethods
         end
 

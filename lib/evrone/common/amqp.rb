@@ -11,16 +11,19 @@ module Evrone
 
       extend self
 
+      @@config  = Common::AMQP::Config.new
+      @@session = Common::AMQP::Session.new
+
       def configure
         yield config
       end
 
       def config
-        @config ||= Common::AMQP::Config.new
+        @@config
       end
 
       def session
-        @session ||= Common::AMQP::Session.new
+        @@session
       end
 
       def open

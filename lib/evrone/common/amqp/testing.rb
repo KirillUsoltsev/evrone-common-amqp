@@ -7,12 +7,15 @@ module Evrone
 
         extend self
 
+        @@messages = []
+        @@exchange_messages = Hash.new { |h,k| h[k] = [] }
+
         def messages
-          @messages ||= []
+          @@messages
         end
 
         def exchange_messages
-          @exchange_messages ||= Hash.new { |h,k| h[k] = [] }
+          @@messages
         end
 
         def clear
