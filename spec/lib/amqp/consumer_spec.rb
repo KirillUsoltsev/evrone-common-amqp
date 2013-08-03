@@ -4,9 +4,13 @@ require 'timeout'
 class Evrone::TestConsumer
   include Evrone::Common::AMQP::Consumer
 
-  def perform(message, properties)
+  ack true
+
+  def perform(payload)
     Thread.current[:collected] ||= []
-    Thread.current[:collected] << message
+    Thread.current[:collected] << payload
+    ack!
+
     :shutdown if Thread.current[:collected].size == 3
   end
 end
@@ -19,7 +23,6 @@ describe Evrone::Common::AMQP::Consumer do
   subject { consumer }
 
   before { consumer_class.reset_consumer_configuration! }
-
 
   context '(configuration)' do
 
@@ -56,6 +59,19 @@ describe Evrone::Common::AMQP::Consumer do
       context "set headers" do
         before { consumer_class.headers 'key' }
         it { should eq({headers: 'key'}) }
+      end
+    end
+
+    context "ack" do
+      subject { consumer_class.ack }
+
+      it "by default should be false" do
+        expect(subject).to be_false
+      end
+
+      it "when set to true should be true" do
+        consumer_class.ack true
+        expect(subject).to be_true
       end
     end
 
@@ -217,7 +233,6 @@ describe Evrone::Common::AMQP::Consumer do
     end
   end
 
-
   context '(subscribe)' do
     let(:x_name)  { consumer_class.exchange_name      }
     let(:q_name)  { consumer_class.queue_name         }
@@ -233,6 +248,7 @@ describe Evrone::Common::AMQP::Consumer do
     end
 
     before do
+      consumer_class.ack true
       q.bind(x)
       3.times { |n| x.publish "n#{n}" }
     end
