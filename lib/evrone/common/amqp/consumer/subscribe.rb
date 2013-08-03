@@ -18,7 +18,7 @@ module Evrone
 
             subscription_loop q
 
-            session.warn "#{to_s} shutdown"
+            debug "shutdown"
           end
         end
 
@@ -45,15 +45,15 @@ module Evrone
           end
 
           def log_subscription(q, x)
-            session.warn "#{to_s} subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
+            info "subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
             yield
-            session.warn "#{to_s} successfuly subscribed to #{q.name}:#{x.name}"
+            info "successfuly subscribed to #{q.name}:#{x.name}"
           end
 
           def log_received_message(delivery_info, payload)
-            session.info "#{to_s} receive ##{delivery_info.delivery_tag} #{payload.inspect}"
+            debug "receive ##{delivery_info.delivery_tag.to_i} #{payload.inspect}"
             yield
-            session.info "#{to_s} done ##{delivery_info.delivery_tag}"
+            debug "done ##{delivery_info.delivery_tag.to_i}"
           end
 
           def run_instance(delivery_info, properties, payload)

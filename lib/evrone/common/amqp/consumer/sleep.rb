@@ -7,7 +7,7 @@ module Evrone
           if defined?(::Celluloid)
             ::Celluloid.sleep interval
           else
-            Kernel.sleep interval
+            ::Kernel.sleep interval
           end
         end
 

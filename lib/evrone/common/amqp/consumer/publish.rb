@@ -14,7 +14,7 @@ module Evrone
           x  = declare_exchange
 
           x.publish m.serialize, m.options
-          session.debug "published #{message.inspect} to #{x.name}"
+          debug "published #{message.inspect} to #{x.name}"
           self
         end
 

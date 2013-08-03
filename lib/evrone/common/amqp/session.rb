@@ -6,6 +6,8 @@ module Evrone
     module AMQP
       class Session
 
+        include Common::AMQP::Logger
+
         CHANNEL_KEY = :evrone_amqp_channel
 
         @@session_lock = Mutex.new
@@ -35,7 +37,7 @@ module Evrone
             rescue Bunny::ChannelError => e
               warn e
             end
-            warn "close connection"
+            info "close connection"
           end
         end
 
@@ -48,13 +50,13 @@ module Evrone
             @conn ||= Bunny.new config.url, heartbeat: :server
 
             unless conn.open?
-              warn "connecting to #{conn_info}"
+              info "connecting to #{conn_info}"
               conn.start
-              warn "wait connection to #{conn_info}"
+              info "wait connection to #{conn_info}"
               while conn.connecting?
                 Common::AMQP.sleep 0.01
               end
-              warn "connected successfuly (#{server_name})"
+              info "connected successfuly (#{server_name})"
             end
           end
 
@@ -114,13 +116,6 @@ module Evrone
           if conn
             p = conn.server_properties || {}
             "#{p["product"]}/#{p["version"]}"
-          end
-        end
-
-        %w{ debug info warn }.each do |m|
-          define_method m do |msg|
-            id = open? && channel ? channel.id : "#"
-            Common::AMQP.logger.public_send(m, "[amqp:#{id}] #{msg}")
           end
         end
 

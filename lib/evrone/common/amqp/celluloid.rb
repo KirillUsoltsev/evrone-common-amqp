@@ -3,8 +3,6 @@ require 'celluloid'
 
 trap("INT") { Evrone::Common::AMQP.shutdown }
 
-::Celluloid.logger = Common::AMQP.config.logger
-
 module Evrone
   module Common
     module AMQP
@@ -34,7 +32,7 @@ module Evrone
               ::Celluloid.sleep 1 while !Common::AMQP.shutdown?
             end
 
-            ::Celluloid.shutdown
+            #::Celluloid.shutdown
           end
 
         end
@@ -42,7 +40,7 @@ module Evrone
         class Worker
 
           include ::Celluloid
-          include ::Celluloid::Logger
+          include Common::AMQP::Logger
 
           def initialize(klass, number)
             @number = number
@@ -51,8 +49,10 @@ module Evrone
           end
 
           def spawn
-            Thread.current[:actor_number] = @number
-            Evrone::Common::AMQP.session.warn "#{@klass.to_s} spawn ##{@number}"
+            Thread.current[:amqp_consumer_number] = @number
+            Thread.current[:amqp_consumer_id]     = "#{@klass.to_s}##{@number}"
+
+            warn "spawn"
             @klass.subscribe
           end
         end

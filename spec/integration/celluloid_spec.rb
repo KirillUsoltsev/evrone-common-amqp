@@ -10,7 +10,7 @@ class Evrone::BobActor
   ack      true
 
   def perform(payload)
-    raise "Simulate crash" if Random.new(delivery_info.delivery_tag).rand < 0.2
+    #raise "Simulate crash" if Random.new(delivery_info.delivery_tag).rand < 0.2
     $mtest_mutex.synchronize do
       $mtest_collected << payload
       ack!

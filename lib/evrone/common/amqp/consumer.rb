@@ -11,8 +11,9 @@ module Evrone
         autoload :Sleep,         File.expand_path("../consumer/sleep",         __FILE__)
         autoload :Ack,           File.expand_path("../consumer/ack",           __FILE__)
 
-        include Consumer::Sleep
-        include Consumer::Ack
+        include Common::AMQP::Consumer::Sleep
+        include Common::AMQP::Consumer::Ack
+        include Common::AMQP::Logger
 
         attr_accessor :delivery_info
         attr_accessor :properties
@@ -24,10 +25,11 @@ module Evrone
 
         module ClassMethods
 
-          include Consumer::Configuration
-          include Consumer::Publish
-          include Consumer::Subscribe
-          include Consumer::Sleep
+          include Common::AMQP::Consumer::Configuration
+          include Common::AMQP::Consumer::Publish
+          include Common::AMQP::Consumer::Subscribe
+          include Common::AMQP::Consumer::Sleep
+          include Common::AMQP::Logger
 
           def shutdown?
             Common::AMQP.shutdown?

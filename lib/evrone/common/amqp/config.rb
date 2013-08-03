@@ -4,6 +4,7 @@ module Evrone
   module Common
     module AMQP
       class Config
+
         attr_accessor :url, :default_exchange_options, :default_queue_options,
           :default_publish_options, :default_exchange_type, :logger, :pool_timeout,
           :heartbeat

@@ -9,6 +9,7 @@ module Evrone
       autoload :Consumer,   File.expand_path("../amqp/consumer",  __FILE__)
       autoload :Message,    File.expand_path("../amqp/message",   __FILE__)
       autoload :Celluloid,  File.expand_path("../amqp/celluloid", __FILE__)
+      autoload :Logger,     File.expand_path("../amqp/logger",    __FILE__)
 
       extend self
 
@@ -31,12 +32,20 @@ module Evrone
         session.open
       end
 
+      def open?
+        session.open?
+      end
+
       def close
         session.close
       end
 
       def logger
         config.logger
+      end
+
+      def logger=(val)
+        config.logger = val
       end
 
       def shutdown
