@@ -119,9 +119,8 @@ module Evrone
 
         %w{ debug info warn }.each do |m|
           define_method m do |msg|
-            Common::AMQP.logger.public_send(m,
-              ((open? && channel) ? "[amqp:#{channel.id}] #{msg}" : "[amqp] #{msg}")
-            )
+            id = open? && channel ? channel.id : "#"
+            Common::AMQP.logger.public_send(m, "[amqp:#{id}] #{msg}")
           end
         end
 

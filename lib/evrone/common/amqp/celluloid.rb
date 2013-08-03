@@ -51,6 +51,7 @@ module Evrone
           end
 
           def spawn
+            Thread.current[:actor_number] = @number
             info "spawn task ##{@number} #{@klass.to_s}"
             @klass.subscribe
           end
