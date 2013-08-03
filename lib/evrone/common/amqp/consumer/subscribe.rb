@@ -1,3 +1,5 @@
+require 'celluloid'
+
 module Evrone
   module Common
     module AMQP
@@ -26,14 +28,13 @@ module Evrone
             loop do
               break if shutdown?
 
-              delivery_info, properties, payload = q.pop(ack: true)
+              delivery_info, properties, payload = q.pop(ack: ack)
 
               if payload
                 result = nil
 
                 log_received_message delivery_info, payload do
                   result = run_instance delivery_info, properties, payload
-                  session.channel.ack delivery_info.delivery_tag, false
                 end
 
                 break if result == :shutdown
@@ -52,14 +53,17 @@ module Evrone
           def log_received_message(delivery_info, payload)
             session.debug "#{consumer_name} receive ##{delivery_info.delivery_tag} #{payload.inspect}"
             yield
-            session.debug "#{consumer_name} commit ##{delivery_info.delivery_tag}"
+            session.debug "#{consumer_name} done ##{delivery_info.delivery_tag}"
           end
 
-          def run_instance(delivery_tag, properties, payload)
+          def run_instance(delivery_info, properties, payload)
             body = try_build_from_model(payload) ||
                    Common::AMQP::Message.deserialize(payload, properties)
 
-            new.perform body, properties
+            new.tap do |inst|
+              inst.properties    = properties
+              inst.delivery_info = delivery_info
+            end.perform body
           end
 
           def try_build_from_model(message)

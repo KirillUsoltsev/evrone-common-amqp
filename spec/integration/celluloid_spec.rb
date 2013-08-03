@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'thread'
 require 'timeout'
 
-class Evrone::BobThread
+class Evrone::BobActor
   include Evrone::Common::AMQP::Consumer
 
   queue    exclusive: true, durable: false
@@ -10,6 +10,7 @@ class Evrone::BobThread
   ack      true
 
   def perform(payload)
+    raise "Simulate crash" if Random.new(delivery_info.delivery_tag).rand < 0.2
     $mtest_mutex.synchronize do
       $mtest_collected << payload
       ack!
@@ -18,7 +19,7 @@ class Evrone::BobThread
   end
 end
 
-class Evrone::AliceThread
+class Evrone::AliceActor
   include Evrone::Common::AMQP::Consumer
 
   queue    exclusive: true, durable: false
@@ -26,16 +27,16 @@ class Evrone::AliceThread
   ack      true
 
   def perform(payload)
-    Evrone::BobThread.publish payload
+    Evrone::BobActor.publish payload
     ack!
     sleep 0.1
   end
 end
 
-describe "Run in multithread environment", slow: true do
+describe "Run in celluloid environment", slow: true do
   let(:num_messages) { 100 }
-  let(:alice)   { Evrone::AliceThread }
-  let(:bob)     { Evrone::BobThread }
+  let(:alice)   { Evrone::AliceActor }
+  let(:bob)     { Evrone::BobActor }
   let(:sess)    { Evrone::Common::AMQP.open }
   let(:ch)      { sess.conn.create_channel }
 
@@ -49,18 +50,14 @@ describe "Run in multithread environment", slow: true do
   end
 
   it "should be successfuly" do
-    ths = (0..12).map do |i|
-      klass = (i % 2 == 0) ? alice : bob
-      Thread.new do
-        klass.subscribe
-      end
-    end
-    ths.each{|t| t.abort_on_exception = true }
-    sleep 0.5
+    Evrone::Common::AMQP::Celluloid.spawn_async(alice => 6, bob => 6)
+    Celluloid.sleep 0.5
 
     num_messages.times do |n|
       alice.publish "n#{n}"
     end
+
+    Celluloid.sleep 0.5
 
     Timeout.timeout(60) do
       loop do
@@ -70,12 +67,13 @@ describe "Run in multithread environment", slow: true do
           stop = true if $mtest_collected.size >= num_messages
         end
         break if stop
-        sleep 2
+        Celluloid.sleep 2
       end
     end
 
     Evrone::Common::AMQP.shutdown
-    Timeout.timeout(10) { ths.map{|i| i.join } }
+    Celluloid.sleep 0.5
+    Celluloid.shutdown
 
     expect($mtest_collected.sort).to eq (0...num_messages).map{|i| "n#{i}" }.sort
   end

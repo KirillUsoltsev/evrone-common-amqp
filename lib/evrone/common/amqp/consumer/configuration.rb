@@ -17,7 +17,8 @@ module Evrone
             @consumer_configuration =
               OpenStruct.new(exchange:      OpenStruct.new(options: {}),
                              queue:         OpenStruct.new(options: {}),
-                             consumer_name: make_consumer_name)
+                             consumer_name: make_consumer_name,
+                             ack:           false)
           end
         end
 
@@ -50,6 +51,11 @@ module Evrone
         def model(value = nil)
           consumer_configuration.model = value unless value == nil
           consumer_configuration.model
+        end
+
+        def ack(value = nil)
+          consumer_configuration.ack = value unless value == nil
+          consumer_configuration.ack
         end
 
         def consumer_name

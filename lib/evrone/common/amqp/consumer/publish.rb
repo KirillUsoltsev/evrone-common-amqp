@@ -13,9 +13,8 @@ module Evrone
           m  = Common::AMQP::Message.new(message, options)
           x  = declare_exchange
 
-          session.debug "#{consumer_name} publishing #{message.inspect} to #{x.name}"
           x.publish m.serialize, m.options
-          session.debug "#{consumer_name} successfuly published"
+          session.debug "published #{message.inspect} to #{x.name}"
           self
         end
 

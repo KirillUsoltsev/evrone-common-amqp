@@ -8,15 +8,26 @@ module Evrone
         autoload :Configuration, File.expand_path("../consumer/configuration", __FILE__)
         autoload :Publish,       File.expand_path("../consumer/publish",       __FILE__)
         autoload :Subscribe,     File.expand_path("../consumer/subscribe",     __FILE__)
+        autoload :Sleep,         File.expand_path("../consumer/sleep",         __FILE__)
+        autoload :Ack,           File.expand_path("../consumer/ack",           __FILE__)
+
+        include Consumer::Sleep
+        include Consumer::Ack
+
+        attr_accessor :delivery_info
+        attr_accessor :properties
+        attr_accessor :channel
 
         def self.included(base)
-          base.extend Consumer::Configuration
-          base.extend Consumer::Publish
-          base.extend Consumer::Subscribe
           base.extend ClassMethods
         end
 
         module ClassMethods
+
+          include Consumer::Configuration
+          include Consumer::Publish
+          include Consumer::Subscribe
+          include Consumer::Sleep
 
           def shutdown?
             Common::AMQP.shutdown?
