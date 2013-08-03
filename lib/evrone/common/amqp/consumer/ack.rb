@@ -5,7 +5,7 @@ module Evrone
 
         def ack!(multiple = false)
           self.class.session.channel.ack delivery_info.delivery_tag, multiple
-          debug "commit ##{delivery_info.consumer_tag.to_i}"
+          debug "commit ##{delivery_info.delivery_tag.to_i}"
         end
 
         def nack!(multiple = false, requeue = false)

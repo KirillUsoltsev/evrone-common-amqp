@@ -10,7 +10,7 @@ class Evrone::BobActor
   ack      true
 
   def perform(payload)
-    #raise "Simulate crash" if Random.new(delivery_info.delivery_tag).rand < 0.2
+    raise "Simulate crash" if Random.new(delivery_info.delivery_tag.to_i).rand < 0.2
     $mtest_mutex.synchronize do
       $mtest_collected << payload
       ack!
@@ -50,7 +50,7 @@ describe "Run in celluloid environment", slow: true do
   end
 
   it "should be successfuly" do
-    Evrone::Common::AMQP::Celluloid.spawn_async(alice => 6, bob => 6)
+    Evrone::Common::AMQP::Executor::Celluloid.spawn_async(alice => 6, bob => 6)
     Celluloid.sleep 0.5
 
     num_messages.times do |n|
