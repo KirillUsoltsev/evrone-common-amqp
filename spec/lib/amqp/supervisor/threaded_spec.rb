@@ -93,22 +93,14 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     context "raise when attemts limit reached" do
       let(:runner) {
         Proc.new do
-          sleep 0.1
-          id = Thread.current[:id]
-          mutex.synchronize do
-            collected.push id
-          end
           raise IgnoreMeError
         end
       }
 
-      before do
+      it "should be" do
         Evrone::Common::AMQP.configure do |c|
           c.spawn_attempts = 1
         end
-      end
-
-      it "should be" do
         th = supervisor.run_async
         timeout 10 do
           expect {

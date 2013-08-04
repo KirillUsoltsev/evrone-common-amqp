@@ -11,15 +11,20 @@ module Evrone
 
         Task = Struct.new(:object, :method, :id) do
 
-          attr_accessor :thread, :attempt
+          attr_accessor :thread, :attempt, :start_at
 
           def alive?
             !!(thread && thread.alive?)
           end
 
           def inspect
-            %{#<#{self.class.to_s} object=#{object.to_s} method=#{method.inspect} id=#{id.inspect} alive=#{alive?} attempt=#{attempt}>}
-
+            %{#<Task
+                 object=#{object.to_s}
+                 method=#{method.inspect}
+                 id=#{id.inspect}
+                 alive=#{alive?}
+                 attempt=#{attempt}
+                 start_at=#{start_at}> }.gsub("\n", ' ').gsub(/ +/, ' ').strip
           end
         end
 
@@ -39,6 +44,10 @@ module Evrone
             supervisor
           end
 
+          def resume
+            @@shutdown = false
+          end
+
           def shutdown?
             @@shutdown
           end
@@ -50,8 +59,8 @@ module Evrone
         end
 
         def initialize
-          @tasks    = Array.new
-          @shutdown = false
+          self.class.resume
+          @tasks = Array.new
         end
 
         def add(object, method, id)
@@ -98,8 +107,7 @@ module Evrone
 
           def process_fail(task)
             log_thread_error task
-            task.thread.kill
-            if check_attempt task.attempt
+            if check_attempt task
               @tasks.push create_thread(task, task.attempt + 1)
             else
               raise SpawnAttemptsLimitReached
@@ -117,6 +125,7 @@ module Evrone
           end
 
           def create_thread(task, attempt)
+            attempt = 0 if reset_attempt?(task)
             task.dup.tap do |new_task|
               new_task.thread = Thread.new(new_task) do |t|
                 Thread.current[:id] = t.id
@@ -125,6 +134,7 @@ module Evrone
               end
               new_task.thread.abort_on_exception = false
               new_task.attempt = attempt
+              new_task.start_at = Time.now
               new_task.freeze
               debug "spawn #{new_task.inspect}"
             end
@@ -143,8 +153,15 @@ module Evrone
             end
           end
 
-          def check_attempt(value)
-            value.to_i <= Common::AMQP.config.spawn_attempts.to_i
+          def reset_attempt?(task)
+            return true unless task.start_at
+
+            interval = 60
+            (task.start_at + interval) < Time.now
+          end
+
+          def check_attempt(task)
+            task.attempt.to_i <= Common::AMQP.config.spawn_attempts.to_i
           end
 
       end
