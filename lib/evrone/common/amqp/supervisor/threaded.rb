@@ -22,6 +22,21 @@ module Evrone
           end
         end
 
+
+        class << self
+
+          def build(tasks)
+            supervisor = new
+            tasks.each_pair do |k,v|
+              v.times do |n|
+                supervisor.add k, :subscribe, v
+              end
+            end
+            supervisor
+          end
+
+        end
+
         def initialize
           @tasks    = Array.new
           @shutdown = false

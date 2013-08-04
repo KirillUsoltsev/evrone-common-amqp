@@ -53,10 +53,7 @@ describe "Run in multithread environment", slow: true do
 
   it "should be successfuly" do
 
-    supervisor = Evrone::Common::AMQP::Supervisor::Threaded.new
-
-    6.times {|n| supervisor.add alice, :subscribe, n }
-    6.times {|n| supervisor.add bob, :subscribe, n }
+    supervisor = Evrone::Common::AMQP::Supervisor::Threaded.build alice => 6, bob => 6
 
     supervisor_thread = supervisor.run_async
 
