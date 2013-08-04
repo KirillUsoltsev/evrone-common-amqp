@@ -43,7 +43,7 @@ module Evrone
           @recieving_builder     = nil
           @subscribing_builder   = nil
 
-          @spawn_attempts        = 10
+          @spawn_attempts        = 5
 
           @default_exchange_options = {
             durable:     true,

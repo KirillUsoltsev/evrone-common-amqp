@@ -58,9 +58,10 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
 
       it "should be", slow: true do
         timeout 10 do
-          supervisor.run_async
+          th = supervisor.run_async
           sleep 0.2
           supervisor.shutdown
+          timeout(10) { th.join }
           expect(collected.sort).to eq [1,2,3,4,5]
         end
       end
