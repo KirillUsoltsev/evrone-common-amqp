@@ -10,9 +10,9 @@ module Evrone
             x = declare_exchange
             q = declare_queue
 
-            log_subscription q, x do
-              q.bind(x, bind_options)
-            end
+            debug "subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
+            q.bind(x, bind_options)
+            debug "successfuly subscribed to #{q.name}:#{x.name}"
 
             subscription_loop q
 
@@ -31,9 +31,9 @@ module Evrone
               if payload
                 result = nil
 
-                log_received_message delivery_info, payload do
-                  result = run_instance delivery_info, properties, payload
-                end
+                debug "recieve ##{delivery_info.delivery_tag.to_i} #{payload.inspect}"
+                result = run_instance delivery_info, properties, payload
+                debug "done ##{delivery_info.delivery_tag.to_i}"
 
                 break if result == :shutdown
               else
@@ -42,26 +42,16 @@ module Evrone
             end
           end
 
-          def log_subscription(q, x)
-            info "subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
-            yield
-            info "successfuly subscribed to #{q.name}:#{x.name}"
-          end
-
-          def log_received_message(delivery_info, payload)
-            debug "receive ##{delivery_info.delivery_tag.to_i} #{payload.inspect}"
-            yield
-            debug "done ##{delivery_info.delivery_tag.to_i}"
-          end
-
           def run_instance(delivery_info, properties, payload)
             body = try_build_from_model(payload) ||
-                   Common::AMQP::Message.deserialize(payload, properties)
+              Common::AMQP::Message.deserialize(payload, properties)
 
-            new.tap do |inst|
-              inst.properties    = properties
-              inst.delivery_info = delivery_info
-            end.perform body
+            with_middleware(:recieving, payload: body) do |opts|
+              new.tap do |inst|
+                inst.properties    = properties
+                inst.delivery_info = delivery_info
+              end.perform opts[:payload]
+            end
           end
 
           def try_build_from_model(message)

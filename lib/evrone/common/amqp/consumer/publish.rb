@@ -13,7 +13,10 @@ module Evrone
           m  = Common::AMQP::Message.new(message, options)
           x  = declare_exchange
 
-          x.publish m.serialize, m.options
+          with_middleware :publishing, message: m, exchange: x do |opts|
+            x.publish opts[:message].serialize, opts[:message].options
+          end
+
           debug "published #{message.inspect} to #{x.name}"
           self
         end

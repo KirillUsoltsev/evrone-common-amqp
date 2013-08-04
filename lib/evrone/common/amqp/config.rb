@@ -1,4 +1,5 @@
 require 'logger'
+require 'evrone/common/rack/builder'
 
 module Evrone
   module Common
@@ -9,8 +10,18 @@ module Evrone
           :default_publish_options, :default_exchange_type, :logger, :pool_timeout,
           :heartbeat
 
+        attr_reader  :publishing_builder, :recieving_builder
+
         def initialize
           reset!
+        end
+
+        def publishing(&block)
+          @publishing_builder = Common::Rack::Builder.new(&block)
+        end
+
+        def recieving(&block)
+          @recieving_builder = Common::Rack::Builder.new(&block)
         end
 
         def default_exchange_name
@@ -23,6 +34,9 @@ module Evrone
           @default_exchange_type = :topic
           @pool_timeout          = 0.1
           @heartbeat             = 10
+
+          @publishing_builder    = nil
+          @recieving_builder     = nil
 
           @default_exchange_options = {
             durable:     true,
@@ -40,6 +54,7 @@ module Evrone
           }
 
         end
+
       end
     end
   end

@@ -86,6 +86,7 @@ module Evrone
             task.dup.tap do |new_task|
               new_task.thread = Thread.new(new_task) do |t|
                 Thread.current[:id] = t.id
+                Thread.current[:consumer_name] = t.object.to_s
                 t.object.send t.method
               end
               new_task.thread.abort_on_exception = false
