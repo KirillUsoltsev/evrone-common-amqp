@@ -100,8 +100,8 @@ module Evrone
             begin
               task.thread.value
             rescue Exception => e
-              warn "ERROR: #{e.class.to_s} #{e} in #{task.inspect}"
-              warn "BACKTRACE:\n" + e.backtrace.join("\n")
+              STDERR.puts "#{e.inspect} in #{task.inspect}"
+              STDERR.puts e.backtrace.join("\n")
             end
           end
 
