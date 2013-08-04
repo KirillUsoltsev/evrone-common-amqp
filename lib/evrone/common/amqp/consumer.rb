@@ -11,7 +11,6 @@ module Evrone
         autoload :Sleep,         File.expand_path("../consumer/sleep",         __FILE__)
         autoload :Ack,           File.expand_path("../consumer/ack",           __FILE__)
 
-        include Common::AMQP::Consumer::Sleep
         include Common::AMQP::Consumer::Ack
         include Common::AMQP::Logger
 
@@ -35,7 +34,6 @@ module Evrone
           include Common::AMQP::Consumer::Configuration
           include Common::AMQP::Consumer::Publish
           include Common::AMQP::Consumer::Subscribe
-          include Common::AMQP::Consumer::Sleep
           include Common::AMQP::Logger
 
           def shutdown?

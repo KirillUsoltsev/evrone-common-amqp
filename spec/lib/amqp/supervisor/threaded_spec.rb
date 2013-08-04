@@ -20,17 +20,17 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     }.to change { superviser.size }.from(0).to(1)
   end
 
-  context "pool" do
+  context "run" do
     let(:mutex)     { Mutex.new }
     let(:collected) { [] }
     let(:len)       { 1 }
     let(:runner)    {
       Proc.new do
-        sleep 0.1
         id = Thread.current[:id]
         mutex.synchronize do
           collected.push id
         end
+        sleep 1
       end
     }
 
@@ -42,7 +42,7 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     context "start one task" do
       it "should be" do
         timeout 2 do
-          superviser.pool_async
+          superviser.run_async
           sleep 0.2
           superviser.shutdown
           expect(collected).to eq [1]
@@ -55,10 +55,10 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
 
       it "should be", slow: true do
         timeout 10 do
-          superviser.pool_async
-          sleep 5
+          superviser.run_async
+          sleep 0.2
           superviser.shutdown
-          expect(collected).to eq [1,2,3,4,5]
+          expect(collected.sort).to eq [1,2,3,4,5]
         end
       end
     end
@@ -72,15 +72,17 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
           mutex.synchronize do
             collected.push id
           end
-          raise "ERROR"
+          raise "ERROR SIMULATION"
         end
       }
       it "should be" do
         timeout 10 do
-          superviser.pool_async
-          sleep 5
-          superviser.shutdown
-          expect(collected).to eq [1,2,1,2,1]
+          superviser.run_async
+          sleep 2.2
+          while !collected.empty?
+            first, second = collected.shift, collected.shift
+            expect([first,second].sort).to eq [1,2]
+          end
         end
       end
     end

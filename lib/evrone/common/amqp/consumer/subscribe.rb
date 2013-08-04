@@ -1,5 +1,3 @@
-require 'celluloid'
-
 module Evrone
   module Common
     module AMQP
