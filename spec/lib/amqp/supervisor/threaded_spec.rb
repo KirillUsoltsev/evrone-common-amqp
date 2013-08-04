@@ -7,7 +7,7 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     Struct.new(:timeout, :error) do
       def run
         sleep timeout
-        raise "EXCEPTION" if error
+        raise IgnoreMeError if error
       end
     end
   }

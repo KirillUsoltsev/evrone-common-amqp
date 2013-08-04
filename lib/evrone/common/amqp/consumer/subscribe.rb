@@ -10,11 +10,13 @@ module Evrone
             x = declare_exchange
             q = declare_queue
 
-            debug "subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
-            q.bind(x, bind_options)
-            debug "successfuly subscribed to #{q.name}:#{x.name}"
+            with_middleware(:subscribing, exchange: x, queue: q) do |_|
+              debug "subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
+              q.bind(x, bind_options)
+              debug "successfuly subscribed to #{q.name}:#{x.name}"
 
-            subscription_loop q
+              subscription_loop q
+            end
 
             debug "shutdown"
           end

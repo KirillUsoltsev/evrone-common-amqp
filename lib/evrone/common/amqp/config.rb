@@ -10,7 +10,7 @@ module Evrone
           :default_publish_options, :default_exchange_type, :logger, :pool_timeout,
           :heartbeat
 
-        attr_reader  :publishing_builder, :recieving_builder
+        attr_reader  :publishing_builder, :recieving_builder, :subscribing_builder
 
         def initialize
           reset!
@@ -22,6 +22,10 @@ module Evrone
 
         def recieving(&block)
           @recieving_builder = Common::Rack::Builder.new(&block)
+        end
+
+        def subscribing(&block)
+          @subscribing_builder = Common::Rack::Builder.new(&block)
         end
 
         def default_exchange_name

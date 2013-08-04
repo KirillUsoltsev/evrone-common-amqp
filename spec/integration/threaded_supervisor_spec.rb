@@ -13,7 +13,7 @@ class Evrone::BobThreadWithSupervisor
 
   def perform(payload)
     $mtest_mutex.synchronize do
-      raise ErrorSimulation if Random.new(delivery_info.delivery_tag.to_i).rand < 0.2
+      raise IgnoreMeError if Random.new(delivery_info.delivery_tag.to_i).rand < 0.2
       $mtest_collected << payload
       ack!
       sleep 0.1
