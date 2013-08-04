@@ -2,7 +2,7 @@ require 'spec_helper'
 require 'timeout'
 
 describe Evrone::Common::AMQP::Supervisor::Threaded do
-  let(:superviser) { described_class.new }
+  let(:supervisor) { described_class.new }
   let(:runner)     {
     Struct.new(:timeout, :error) do
       def run
@@ -12,12 +12,15 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     end
   }
 
+  after { Evrone::Common::AMQP.config.reset! }
+  before { Evrone::Common::AMQP.config.reset! }
+
   it { should be }
 
   it "should add a new task" do
     expect{
-      superviser.add runner.new(1, false), :run, 1
-    }.to change { superviser.size }.from(0).to(1)
+      supervisor.add runner.new(1, false), :run, 1
+    }.to change { supervisor.size }.from(0).to(1)
   end
 
   context "run" do
@@ -35,16 +38,16 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     }
 
     before do
-      len.times {|n| superviser.add runner, :call, n + 1 }
-      expect(superviser.size).to eq len
+      len.times {|n| supervisor.add runner, :call, n + 1 }
+      expect(supervisor.size).to eq len
     end
 
     context "start one task" do
       it "should be" do
         timeout 2 do
-          superviser.run_async
+          supervisor.run_async
           sleep 0.2
-          superviser.shutdown
+          supervisor.shutdown
           expect(collected).to eq [1]
         end
       end
@@ -55,9 +58,9 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
 
       it "should be", slow: true do
         timeout 10 do
-          superviser.run_async
+          supervisor.run_async
           sleep 0.2
-          superviser.shutdown
+          supervisor.shutdown
           expect(collected.sort).to eq [1,2,3,4,5]
         end
       end
@@ -72,17 +75,45 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
           mutex.synchronize do
             collected.push id
           end
-          raise "ERROR SIMULATION"
+          raise IgnoreMeError
         end
       }
       it "should be" do
         timeout 10 do
-          superviser.run_async
+          supervisor.run_async
           sleep 2.2
           while !collected.empty?
             first, second = collected.shift, collected.shift
             expect([first,second].sort).to eq [1,2]
           end
+        end
+      end
+    end
+
+    context "raise when attemts limit reached" do
+      let(:runner) {
+        Proc.new do
+          sleep 0.1
+          id = Thread.current[:id]
+          mutex.synchronize do
+            collected.push id
+          end
+          raise IgnoreMeError
+        end
+      }
+
+      before do
+        Evrone::Common::AMQP.configure do |c|
+          c.spawn_attempts = 1
+        end
+      end
+
+      it "should be" do
+        th = supervisor.run_async
+        timeout 10 do
+          expect {
+            th.join
+          }.to raise_error(Evrone::Common::AMQP::Supervisor::Threaded::SpawnAttemptsLimitReached)
         end
       end
     end

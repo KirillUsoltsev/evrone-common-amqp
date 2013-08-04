@@ -11,19 +11,23 @@ module Evrone
 
         Task = Struct.new(:object, :method, :id) do
 
-          attr_accessor :thread
+          attr_accessor :thread, :attempt
 
           def alive?
             !!(thread && thread.alive?)
           end
 
           def inspect
-            %{#<#{self.class.to_s} object=#{object.to_s} method=#{method.inspect} id=#{id.inspect} alive=#{alive?}>}
+            %{#<#{self.class.to_s} object=#{object.to_s} method=#{method.inspect} id=#{id.inspect} alive=#{alive?} attempt=#{attempt}>}
+
           end
         end
 
+        class SpawnAttemptsLimitReached < ::Exception ; end
 
         class << self
+
+          @@shutdown = false
 
           def build(tasks)
             supervisor = new
@@ -33,6 +37,14 @@ module Evrone
               end
             end
             supervisor
+          end
+
+          def shutdown?
+            @@shutdown
+          end
+
+          def shutdown
+            @@shutdown = true
           end
 
         end
@@ -51,11 +63,11 @@ module Evrone
         end
 
         def shutdown?
-          @shutdown
+          self.class.shutdown?
         end
 
         def shutdown
-          @shutdown = true
+          self.class.shutdown
         end
 
         def run_async
@@ -75,9 +87,7 @@ module Evrone
             when task.alive?
               @tasks.push task
             else
-              log_thread_error task
-              task.thread.kill
-              @tasks.push create_thread(task)
+              process_fail task
             end
 
             sleep POOL_INTERVAL unless shutdown?
@@ -86,18 +96,27 @@ module Evrone
 
         private
 
+          def process_fail(task)
+            log_thread_error task
+            task.thread.kill
+            if check_attempt task.attempt
+              @tasks.push create_thread(task, task.attempt + 1)
+            else
+              raise SpawnAttemptsLimitReached
+            end
+          end
+
           def start_all_threads
             started_tasks = Array.new
             while task = @tasks.shift
-              started_tasks.push create_thread(task)
+              started_tasks.push create_thread(task, 0)
             end
             while task = started_tasks.shift
               @tasks.push task
             end
           end
 
-          def create_thread(task)
-            debug "spawn #{task.inspect}"
+          def create_thread(task, attempt)
             task.dup.tap do |new_task|
               new_task.thread = Thread.new(new_task) do |t|
                 Thread.current[:id] = t.id
@@ -105,7 +124,9 @@ module Evrone
                 t.object.send t.method
               end
               new_task.thread.abort_on_exception = false
+              new_task.attempt = attempt
               new_task.freeze
+              debug "spawn #{new_task.inspect}"
             end
           end
 
@@ -114,10 +135,16 @@ module Evrone
 
             begin
               task.thread.value
+              nil
             rescue Exception => e
               STDERR.puts "#{e.inspect} in #{task.inspect}"
               STDERR.puts e.backtrace.join("\n")
+              e
             end
+          end
+
+          def check_attempt(value)
+            value.to_i <= Common::AMQP.config.spawn_attempts.to_i
           end
 
       end

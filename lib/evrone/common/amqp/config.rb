@@ -8,7 +8,7 @@ module Evrone
 
         attr_accessor :url, :default_exchange_options, :default_queue_options,
           :default_publish_options, :default_exchange_type, :logger, :pool_timeout,
-          :heartbeat
+          :heartbeat, :spawn_attempts
 
         attr_reader  :publishing_builder, :recieving_builder, :subscribing_builder
 
@@ -41,6 +41,9 @@ module Evrone
 
           @publishing_builder    = nil
           @recieving_builder     = nil
+          @subscribing_builder   = nil
+
+          @spawn_attempts        = 10
 
           @default_exchange_options = {
             durable:     true,
