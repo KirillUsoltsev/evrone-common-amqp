@@ -9,9 +9,14 @@ module Evrone
       autoload :Consumer,   File.expand_path("../amqp/consumer",  __FILE__)
       autoload :Message,    File.expand_path("../amqp/message",   __FILE__)
       autoload :Logger,     File.expand_path("../amqp/logger",    __FILE__)
+      autoload :CLI,        File.expand_path("../amqp/cli",       __FILE__)
 
       module Executor
         autoload :Celluloid,  File.expand_path("../amqp/executor/celluloid", __FILE__)
+      end
+
+      module Supervisor
+        autoload :Threaded, File.expand_path("../amqp/supervisor/threaded",  __FILE__)
       end
 
       extend self

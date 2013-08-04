@@ -19,8 +19,15 @@ module Evrone
         attr_accessor :properties
         attr_accessor :channel
 
+        @@classes = []
+
         def self.included(base)
           base.extend ClassMethods
+          @@classes << base.to_s
+        end
+
+        def self.classes
+          @@classes
         end
 
         module ClassMethods

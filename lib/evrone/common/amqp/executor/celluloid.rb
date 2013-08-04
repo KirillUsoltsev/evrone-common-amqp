@@ -1,8 +1,6 @@
 require 'thread'
 require 'celluloid'
 
-trap("INT") { Evrone::Common::AMQP.shutdown }
-
 module Evrone
   module Common
     module AMQP
@@ -18,8 +16,6 @@ module Evrone
             def spawn(workers, options = {})
               async = options.key?(:async) ? options[:async] : false
 
-              #Common::AMQP.open
-
               supervisor = ::Celluloid::SupervisionGroup.run!
 
               workers.each_pair do |klass, size|
@@ -33,7 +29,6 @@ module Evrone
                 ::Celluloid.sleep 1 while !Common::AMQP.shutdown?
               end
 
-              #::Celluloid.shutdown
             end
 
           end
