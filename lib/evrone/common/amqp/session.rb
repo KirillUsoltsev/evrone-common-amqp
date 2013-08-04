@@ -42,7 +42,7 @@ module Evrone
         end
 
         def open
-          return self if conn && conn.open?
+          return self if open?
 
           @@session_lock.synchronize do
             self.class.resume

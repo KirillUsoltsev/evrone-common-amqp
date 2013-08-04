@@ -3,6 +3,7 @@ require 'ostruct'
 
 trap "INT" do
   Evrone::Common::AMQP.shutdown
+  Evrone::Common::AMQP::Supervisor::Threaded.shutdown
 end
 
 module Evrone
@@ -17,12 +18,19 @@ module Evrone
         def run
           require_before_executing
           load_consumers
+
           consumers = find_consumers.inject({}) do |a,c|
             a[c] = 2
             a
           end
 
-          Common::AMQP::Executor::Celluloid.spawn consumers
+          supervisor = Common::AMQP::Supervisor::Threaded.new
+          consumers.each do |k,v|
+            v.times do |n|
+              supervisor.add k, :subscribe, n
+            end
+          end
+          supervisor.run
         end
 
         private

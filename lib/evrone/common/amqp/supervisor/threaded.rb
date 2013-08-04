@@ -56,11 +56,12 @@ module Evrone
 
             case
             when shutdown?
-              task.thread.join if task.alive?
+              log_thread_error task
             when task.alive?
               @tasks.push task
             else
               log_thread_error task
+              task.thread.kill
               @tasks.push create_thread(task)
             end
 

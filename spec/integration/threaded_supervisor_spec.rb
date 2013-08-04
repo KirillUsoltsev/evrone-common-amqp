@@ -5,13 +5,15 @@ require 'timeout'
 class Evrone::BobThreadWithSupervisor
   include Evrone::Common::AMQP::Consumer
 
+  class ErrorSimulation < ::Exception ; end
+
   queue    exclusive: true, durable: false
   exchange auto_delete: true, durable: false
   ack      true
 
   def perform(payload)
     $mtest_mutex.synchronize do
-      raise "ERROR SIMULATION" if Random.new(delivery_info.delivery_tag.to_i).rand < 0.2
+      raise ErrorSimulation if Random.new(delivery_info.delivery_tag.to_i).rand < 0.2
       $mtest_collected << payload
       ack!
       sleep 0.1
