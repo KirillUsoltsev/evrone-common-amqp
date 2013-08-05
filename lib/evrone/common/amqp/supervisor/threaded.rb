@@ -38,7 +38,7 @@ module Evrone
             supervisor = new
             tasks.each_pair do |k,v|
               v.times do |n|
-                supervisor.add k, :subscribe, v
+                supervisor.add k, :subscribe, n
               end
             end
             supervisor
@@ -128,7 +128,7 @@ module Evrone
             attempt = 0 if reset_attempt?(task)
             task.dup.tap do |new_task|
               new_task.thread = Thread.new(new_task) do |t|
-                Thread.current[:id] = t.id
+                Thread.current[:consumer_id] = t.id
                 Thread.current[:consumer_name] = t.object.to_s
                 t.object.send t.method
               end
