@@ -35,7 +35,7 @@ class Evrone::AliceThreadWithSupervisor
   end
 end
 
-describe "Run in multithread environment", slow: true do
+describe "Run in multithread environment", slow: true, jruby: true do
   let(:num_messages) { 100 }
   let(:alice)   { Evrone::AliceThreadWithSupervisor }
   let(:bob)     { Evrone::BobThreadWithSupervisor }

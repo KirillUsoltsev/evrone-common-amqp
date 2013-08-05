@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'timeout'
 
-describe Evrone::Common::AMQP::Supervisor::Threaded do
+describe Evrone::Common::AMQP::Supervisor::Threaded, jruby: true do
   let(:supervisor) { described_class.new }
   let(:runner)     {
     Struct.new(:timeout, :error) do
