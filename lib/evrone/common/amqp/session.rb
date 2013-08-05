@@ -31,17 +31,18 @@ module Evrone
         def close
           if open?
             @@session_lock.synchronize do
+              info "closing connection"
               begin
                 conn.close
               rescue Bunny::ChannelError => e
                 warn e
               end
-              info "wait closing connection"
+              info "wait..."
               while conn.status != :closed
                 sleep 0.01
               end
               @conn = nil
-              info "close connection"
+              info "connection closed"
             end
           end
         end
