@@ -2,7 +2,7 @@ def delete_queue(q)
   Evrone::Common::AMQP.logger.info "[AMQP] delete queue #{q.inspect[0..30]}"
   if q
     q.purge
-    q.delete if_unused: false, if_empty: false
+    q.delete
   end
   true
 end

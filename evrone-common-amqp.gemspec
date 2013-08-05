@@ -20,7 +20,12 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 1.9.3'
 
-  spec.add_runtime_dependency "bunny",     ">= 1.0.0.pre3"
+  case RUBY_ENGINE
+  when 'ruby'
+    spec.add_runtime_dependency "bunny",       "~> 1.0.0.pre3"
+  when 'jruby'
+    spec.add_runtime_dependency "hot_bunnies", "~> 2.0.0.pre9"
+  end
   spec.add_runtime_dependency "evrone-common-rack-builder"
 
   spec.add_development_dependency "bundler", "~> 1.3"

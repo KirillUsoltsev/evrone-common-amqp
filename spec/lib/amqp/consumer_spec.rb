@@ -227,7 +227,12 @@ describe Evrone::Common::AMQP::Consumer do
         consumer_class.publish message
         sleep 0.25
         expect(q.message_count).to eq 1
-        _, _, expected = q.pop
+        expected = nil
+        if RUBY_ENGINE == 'ruby'
+          _, _, expected = q.pop
+        else
+          _, expected = q.pop
+        end
         expect(expected).to eq message.to_json
       end
     end

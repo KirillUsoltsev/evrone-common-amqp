@@ -4,6 +4,15 @@ module Evrone
   module Common
     module AMQP
 
+      case RUBY_ENGINE
+      when 'ruby'
+        BUNNY_REQUIRE = 'bunny'
+        BUNNY_CLASS   = 'Bunny'
+      when 'jruby'
+        BUNNY_REQUIRE = 'hot_bunnies'
+        BUNNY_CLASS   = 'HotBunnies'
+      end
+
       autoload :Config,     File.expand_path("../amqp/config",   __FILE__)
       autoload :Session,    File.expand_path("../amqp/session",  __FILE__)
       autoload :Consumer,   File.expand_path("../amqp/consumer", __FILE__)

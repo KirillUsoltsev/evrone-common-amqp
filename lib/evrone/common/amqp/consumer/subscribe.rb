@@ -28,7 +28,15 @@ module Evrone
             loop do
               break if shutdown?
 
-              delivery_info, properties, payload = q.pop(ack: ack)
+              delivery_info, properties, payload = nil
+              if RUBY_ENGINE == 'jruby'
+                delivery_info, payload = q.pop(ack: ack)
+                if payload
+                  properties = (delivery_info.headers || {}).merge(content_type: delivery_info.content_type)
+                end
+              else
+                delivery_info, properties, payload = q.pop(ack: ack)
+              end
 
               if payload
                 result = nil

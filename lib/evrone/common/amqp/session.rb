@@ -1,4 +1,4 @@
-require 'bunny'
+require Evrone::Common::AMQP::BUNNY_REQUIRE
 require 'thread'
 
 module Evrone
@@ -33,28 +33,38 @@ module Evrone
             begin
               @@session_lock.synchronize do
                 conn.close
+                @conn = nil
               end
-            rescue Bunny::ChannelError => e
-              warn e
             end
             info "close connection"
           end
         end
 
         def open
+          puts "open"
+          puts "#{open?.inspect}"
           return self if open?
 
           @@session_lock.synchronize do
             self.class.resume
 
-            @conn ||= Bunny.new config.url, heartbeat: :server
+            @conn ||= begin
+              klass = Kernel.const_get(Common::AMQP::BUNNY_CLASS)
+              if klass.respond_to?(:connect)
+                klass.connect uri: config.url, heartbeat_interval: 10
+              else
+                klass.new config.url, heartbeat: 10
+              end
+            end
 
             unless conn.open?
               info "connecting to #{conn_info}"
               conn.start
               info "wait connection to #{conn_info}"
-              while conn.connecting?
-                Common::AMQP.sleep 0.01
+              if RUBY_PLATFORM == 'ruby'
+                while conn.connecting?
+                  Common::AMQP.sleep 0.01
+                end
               end
               info "connected successfuly (#{server_name})"
             end
@@ -64,7 +74,7 @@ module Evrone
         end
 
         def open?
-          conn && conn.open? && conn.status == :open
+          conn && conn.open? && (conn.respond_to?(:status) ? conn.status == :open : true)
         end
 
         def declare_exchange(name, options = nil)
@@ -89,7 +99,7 @@ module Evrone
         def channel
           assert_connection_is_open
 
-          Thread.current[CHANNEL_KEY] || conn.default_channel
+          Thread.current[CHANNEL_KEY] ||= conn.create_channel
         end
 
         def with_channel
@@ -107,7 +117,7 @@ module Evrone
         end
 
         def conn_info
-          if conn
+          if conn && RUBY_PLATFORM == 'ruby'
             "#{conn.user}:#{conn.host}:#{conn.port}/#{conn.vhost}"
           end
         end
@@ -132,7 +142,7 @@ module Evrone
           end
 
           def get_queue_name_and_options(name, options)
-            name  ||= AMQ::Protocol::EMPTY_STRING
+            name  ||= ""
             [name, config.default_queue_options.merge(options || {})]
           end
 

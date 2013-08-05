@@ -31,7 +31,7 @@ describe Evrone::Common::AMQP::Session do
     its("channel.id") { should eq @id }
   end
 
-  it 'channel by default should eq connection default channel' do
+  it 'channel by default should eq connection default channel', ruby: true do
     expect(sess.channel.id).to eq sess.conn.default_channel.id
   end
 
@@ -55,15 +55,19 @@ describe Evrone::Common::AMQP::Session do
   end
 
   context "declare_exchange" do
+    let(:channel) { sess.conn.create_channel }
     let(:options) {{}}
-    let(:exch)    { sess.declare_exchange exch_name, options }
+    let(:exch)    { sess.declare_exchange exch_name, options.merge(channel: channel) }
     subject { exch }
 
-    after { delete_exchange exch }
+    after {
+      delete_exchange exch
+      channel.close
+    }
 
     it{ should be }
 
-    context "by default" do
+    context "by default", ruby: true do
       its(:name)         { should eq exch_name }
       its(:type)         { should eq :topic }
       its(:durable?)     { should be_true   }

@@ -45,7 +45,7 @@ describe "Run in multithread environment", slow: true do
   end
 
   after do
-    sess.close
+    #sess.close
   end
 
   it "should be successfuly" do
