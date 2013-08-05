@@ -29,7 +29,7 @@ module Evrone
         end
 
         def close
-          if conn && conn.open?
+          if open?
             @@session_lock.synchronize do
               begin
                 conn.close
