@@ -30,14 +30,19 @@ module Evrone
 
         def close
           if conn && conn.open?
-            begin
-              @@session_lock.synchronize do
+            @@session_lock.synchronize do
+              begin
                 conn.close
+              rescue Bunny::ChannelError => e
+                warn e
               end
-            rescue Bunny::ChannelError => e
-              warn e
+              info "wait closing connection"
+              while conn.status != :closed
+                sleep 0.01
+              end
+              @conn = nil
+              info "close connection"
             end
-            info "close connection"
           end
         end
 
@@ -54,7 +59,7 @@ module Evrone
               conn.start
               info "wait connection to #{conn_info}"
               while conn.connecting?
-                Common::AMQP.sleep 0.01
+                sleep 0.01
               end
               info "connected successfuly (#{server_name})"
             end
