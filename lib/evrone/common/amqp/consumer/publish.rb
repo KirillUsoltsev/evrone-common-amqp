@@ -11,13 +11,15 @@ module Evrone
           options[:headers]     = headers     if headers && !options.key?(:headers)
 
           m  = Common::AMQP::Message.new(message, options)
-          x  = declare_exchange
+          session.with_channel do
+            x  = declare_exchange
 
-          with_middleware :publishing, message: m, exchange: x do |opts|
-            x.publish opts[:message].serialize, opts[:message].options
+            with_middleware :publishing, message: m, exchange: x do |opts|
+              x.publish opts[:message].serialize, opts[:message].options
+            end
+            debug "published #{message.inspect} to #{x.name}"
           end
 
-          debug "published #{message.inspect} to #{x.name}"
           self
         end
 

@@ -34,6 +34,7 @@ module Evrone
               @@session_lock.synchronize do
                 conn.close
                 @conn = nil
+                sleep 2
               end
             end
             info "close connection"
@@ -99,7 +100,7 @@ module Evrone
         def channel
           assert_connection_is_open
 
-          Thread.current[CHANNEL_KEY] ||= conn.create_channel
+          Thread.current[CHANNEL_KEY]
         end
 
         def with_channel
