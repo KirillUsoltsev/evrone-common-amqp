@@ -45,9 +45,10 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
     context "start one task" do
       it "should be" do
         timeout 2 do
-          supervisor.run_async
+          th = supervisor.run_async
           sleep 0.2
           supervisor.shutdown
+          timeout(10) { th.join }
           expect(collected).to eq [1]
         end
       end
@@ -81,8 +82,10 @@ describe Evrone::Common::AMQP::Supervisor::Threaded do
       }
       it "should be" do
         timeout 10 do
-          supervisor.run_async
+          th = supervisor.run_async
           sleep 2.2
+          supervisor.shutdown
+          timeout(10) { th.join }
           while !collected.empty?
             first, second = collected.shift, collected.shift
             expect([first,second].sort).to eq [1,2]
