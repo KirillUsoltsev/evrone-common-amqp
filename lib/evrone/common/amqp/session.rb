@@ -98,17 +98,28 @@ module Evrone
           Thread.current[CHANNEL_KEY] || conn.default_channel
         end
 
-        def with_channel
+        # TODO: add tests
+        def with_channel(reuse = false)
           assert_connection_is_open
 
           old,new = nil
           begin
-            old,new = Thread.current[CHANNEL_KEY], conn.create_channel
+            old = Thread.current[CHANNEL_KEY]
+            if reuse
+              new = old || conn.create_channel
+            else
+              new = conn.create_channel
+            end
             Thread.current[CHANNEL_KEY] = new
             yield
           ensure
             Thread.current[CHANNEL_KEY] = old
-            new.close if new && new.open?
+            case
+            when reuse && !old
+              new.close if new && new.open?
+            when !reuse
+              new.close if new && new.open?
+            end
           end
         end
 
