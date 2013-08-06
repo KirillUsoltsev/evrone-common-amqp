@@ -15,7 +15,7 @@ module Evrone
         end
 
         def exchange_messages
-          @@messages
+          @@exchange_messages
         end
 
         def clear
