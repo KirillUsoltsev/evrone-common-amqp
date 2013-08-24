@@ -3,7 +3,6 @@ require 'ostruct'
 
 trap "INT" do
   Evrone::Common::AMQP.shutdown
-  Evrone::Common::AMQP::Supervisor::Threaded.shutdown
 end
 
 module Evrone

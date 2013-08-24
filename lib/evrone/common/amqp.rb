@@ -56,6 +56,7 @@ module Evrone
 
       def shutdown
         Common::AMQP::Session.shutdown
+        Evrone::Common::AMQP::Supervisor::Threaded.shutdown
       end
 
       def shutdown?
