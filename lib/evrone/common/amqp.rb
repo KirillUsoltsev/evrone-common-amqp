@@ -4,11 +4,12 @@ module Evrone
   module Common
     module AMQP
 
-      autoload :Config,     File.expand_path("../amqp/config",   __FILE__)
-      autoload :Session,    File.expand_path("../amqp/session",  __FILE__)
-      autoload :Consumer,   File.expand_path("../amqp/consumer", __FILE__)
-      autoload :Message,    File.expand_path("../amqp/message",  __FILE__)
-      autoload :CLI,        File.expand_path("../amqp/cli",      __FILE__)
+      autoload :Config,     File.expand_path("../amqp/config",    __FILE__)
+      autoload :Session,    File.expand_path("../amqp/session",   __FILE__)
+      autoload :Consumer,   File.expand_path("../amqp/consumer",  __FILE__)
+      autoload :Message,    File.expand_path("../amqp/message",   __FILE__)
+      autoload :CLI,        File.expand_path("../amqp/cli",       __FILE__)
+      autoload :Formatter,  File.expand_path("../amqp/formatter", __FILE__)
 
       module Supervisor
         autoload :Threaded, File.expand_path("../amqp/supervisor/threaded", __FILE__)

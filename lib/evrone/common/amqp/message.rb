@@ -18,39 +18,28 @@ module Evrone
           end
         end
 
-        def initialize(body, options = nil)
-          @body            = body
-          @options         = options || {}
+        def initialize(body, consumer, options = nil)
+          @body     = body
+          @options  = options || {}
+          @consumer = consumer
         end
 
-        def content_type
-          options[:content_type]
-        end
 
         def serialize
-          @serialied_body ||= ( try_serialize_strings ||
-                                try_serialize_using_to_json   ||
-                                default_serializer )
+          @serialied_body ||= ( try_serialize_using_formatter || default_serializer )
         end
 
         private
 
-          def try_serialize_strings
-            if @body.is_a?(String)
-              options[:content_type] ||= 'text/plain'
-              @body
-            end
+          def formatter
+            Common::AMQP.config.formatter
           end
 
-          def try_serialize_using_to_json
-            if @object.respond_to?(:to_json)
-              options[:content_type] ||= 'application/json'
-              @body.to_json
-            end
+          def try_serialize_using_formatter
+            formatter.pack(options[:content_type], @consumer, @body)
           end
 
           def default_serializer
-            options[:content_type] ||= 'text/plain'
             @body.to_s
           end
       end

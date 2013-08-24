@@ -44,6 +44,20 @@ describe Evrone::Common::AMQP::Consumer do
       end
     end
 
+    context "content_type" do
+
+      subject { consumer_class.content_type }
+
+      it "by default should be nil" do
+        expect(subject).to be_nil
+      end
+
+      it 'when set content type should be' do
+        consumer_class.content_type 'foo'
+        expect(subject).to eq 'foo'
+      end
+    end
+
     context "bind_options" do
       subject { consumer_class.bind_options }
 
