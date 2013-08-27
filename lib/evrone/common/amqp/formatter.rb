@@ -97,7 +97,7 @@ module Evrone
 
           unpack do |payload, model|
             raise ModelDoesNotExists unless model
-            m.parse payload
+            model.parse payload
           end
 
           class ModelDoesNotExists < Exception ; end
