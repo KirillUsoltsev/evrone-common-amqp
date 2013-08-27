@@ -45,10 +45,9 @@ module Evrone
           end
 
           def run_instance(delivery_info, properties, payload)
-            body = try_build_from_model(payload) ||
-              Common::AMQP::Message.deserialize(payload, properties)
+            payload = deserialize_message properties, payload
 
-            with_middleware(:recieving, payload: body) do |opts|
+            with_middleware(:recieving, payload: payload) do |opts|
               new.tap do |inst|
                 inst.properties    = properties
                 inst.delivery_info = delivery_info
@@ -56,10 +55,10 @@ module Evrone
             end
           end
 
-          def try_build_from_model(message)
-            if model
-              model.from_json message
-            end
+          def deserialize_message(properties, payload)
+            Common::AMQP::Formatter.unpack properties[:content_type],
+                                           model,
+                                           payload
           end
 
       end

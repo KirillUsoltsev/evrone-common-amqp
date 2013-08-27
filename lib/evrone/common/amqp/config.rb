@@ -8,12 +8,16 @@ module Evrone
 
         attr_accessor :url, :default_exchange_options, :default_queue_options,
           :default_publish_options, :default_exchange_type, :logger, :pool_timeout,
-          :heartbeat, :spawn_attempts
+          :heartbeat, :spawn_attempts, :content_type
 
         attr_reader  :publishing_builder, :recieving_builder, :subscribing_builder
 
         def initialize
           reset!
+        end
+
+        def formatter
+          Common::AMQP::Formatter
         end
 
         def publishing(&block)
@@ -44,6 +48,8 @@ module Evrone
           @subscribing_builder   = nil
 
           @spawn_attempts        = 5
+
+          @content_type          = 'application/json'
 
           @default_exchange_options = {
             durable:     true,
