@@ -11,15 +11,10 @@ module Evrone
 
         class Format
 
-          attr_reader :name
+          attr_reader :content_type
 
-          def initialize(name)
-            @name = name
-          end
-
-          def content_type(val = nil)
-            @content_type = val if val
-            @content_type
+          def initialize(content_type)
+            @content_type = content_type
           end
 
           def pack(&block)
@@ -40,45 +35,33 @@ module Evrone
             @@formats
           end
 
-          def define(name, &block)
-            fmt = Format.new name
+          def define(content_type, &block)
+            fmt = Format.new content_type
             fmt.instance_eval(&block)
-            formats.merge! name => fmt
+            formats.merge! content_type => fmt
           end
 
-          def lookup(name)
-            formats[name]
+          def lookup(content_type)
+            formats[content_type]
           end
 
-          def lookup_by_content_type(content_type)
-            if found = formats.find{|k,v| v.content_type == content_type }
-              found.last
+          def pack(content_type, body)
+            if fmt = lookup(content_type)
+              fmt.pack.call(body)
             end
           end
 
-          def content_type(name)
-            formats[name] && formats[name].content_type
-          end
-
-          def pack(content_type, consumer, body)
-            if fmt = lookup_by_content_type(content_type)
-              fmt.pack.call(body, consumer)
-            end
-          end
-
-          def unpack(content_type, consumer, body)
-            if fmt = lookup_by_content_type(content_type)
-              fmt.unpack.call(body, consumer)
+          def unpack(content_type, model, body)
+            if fmt = lookup(content_type)
+              fmt.unpack.call(body, model)
             end
           end
 
         end
 
-        define :string do
+        define 'text/plain' do
 
-          content_type 'text/plain'
-
-          pack do |body, _|
+          pack do |body|
             body.to_s
           end
 
@@ -87,28 +70,24 @@ module Evrone
           end
         end
 
-        define :json do
+        define 'application/json' do
 
-          content_type 'application/json'
-
-          pack do |body, _|
+          pack do |body|
             body.to_json
           end
 
-          unpack do |payload, consumer|
-            if m = consumer.class.model && m.respond_to?(:from_json)
-              m.from_json payload
+          unpack do |payload, model|
+            if model && model.respond_to?(:from_json)
+              model.from_json payload
             else
               JSON.parse(payload)
             end
           end
         end
 
-        define :ruby_protocol_buffers do
+        define 'application/x-protobuf' do
 
-          content_type 'application/x-protobuf'
-
-          pack do |body, _|
+          pack do |body|
             StringIO.open do |io|
               body.serialize(io)
               io.rewind
@@ -116,12 +95,13 @@ module Evrone
             end
           end
 
-          unpack do |payload, consumer|
-            m = consumer.class.model
+          unpack do |payload, model|
+            raise ModelDoesNotExists unless model
             m.parse payload
           end
-        end
 
+          class ModelDoesNotExists < Exception ; end
+        end
       end
 
     end

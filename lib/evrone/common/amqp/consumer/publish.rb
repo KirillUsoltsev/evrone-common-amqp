@@ -11,15 +11,19 @@ module Evrone
           options[:headers]      = headers     if headers && !options.key?(:headers)
           options[:content_type] ||= content_type || config.content_type
 
-          m  = Common::AMQP::Message.new(message, self, options)
-          x  = declare_exchange
+          x = declare_exchange
 
-          with_middleware :publishing, message: m, exchange: x do |opts|
-            x.publish opts[:message].serialize, opts[:message].options
+          with_middleware :publishing, message: message, exchange: x do |opts|
+            m = serialize_message opts[:message], options[:content_type]
+            x.publish m, options
           end
 
           debug "published #{message.inspect} to #{x.name}"
           self
+        end
+
+        def serialize_message(message, content_type)
+          Common::AMQP::Formatter.pack(content_type, message)
         end
 
       end

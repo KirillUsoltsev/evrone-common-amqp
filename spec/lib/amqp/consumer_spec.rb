@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'timeout'
+require 'json'
 
 class Evrone::TestConsumer
   include Evrone::Common::AMQP::Consumer
@@ -147,7 +148,7 @@ describe Evrone::Common::AMQP::Consumer do
   context "(publish)" do
 
     context "options" do
-      let(:message)          { 'message' }
+      let(:message)          { {"foo" => 1, "bar" => 2} }
       let(:expected_options) { {} }
       let(:options)          { {} }
       let(:x)                { OpenStruct.new name: "name" }
@@ -156,7 +157,7 @@ describe Evrone::Common::AMQP::Consumer do
 
       before do
         mock(consumer_class).declare_exchange { x }
-        mock(x).publish(message, expected_options)
+        mock(x).publish(message.to_json, expected_options)
       end
 
       context "routing_key" do
@@ -264,7 +265,7 @@ describe Evrone::Common::AMQP::Consumer do
     before do
       consumer_class.ack true
       q.bind(x)
-      3.times { |n| x.publish "n#{n}" }
+      3.times { |n| x.publish({"n" => n}.to_json, content_type: "application/json") }
     end
 
     subject { Thread.current[:collected] }
@@ -274,7 +275,7 @@ describe Evrone::Common::AMQP::Consumer do
         consumer_class.subscribe
       end
       expect(subject).to have(3).items
-      expect(subject).to eq %w{ n0 n1 n2 }
+      expect(subject.map(&:values).flatten).to eq [0,1,2]
     end
   end
 end

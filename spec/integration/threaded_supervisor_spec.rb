@@ -29,7 +29,7 @@ class Evrone::AliceThreadWithSupervisor
   ack      true
 
   def perform(payload)
-    Evrone::BobThreadWithSupervisor.publish payload
+    Evrone::BobThreadWithSupervisor.publish payload, content_type: properties[:content_type]
     ack!
     sleep 0.1
   end
@@ -60,7 +60,7 @@ describe "Run in multithread environment", slow: true, jruby: true do
     sleep 0.5
 
     num_messages.times do |n|
-      alice.publish "n#{n}"
+      alice.publish "n#{n}", content_type: "text/plain"
     end
 
     Timeout.timeout(60) do
