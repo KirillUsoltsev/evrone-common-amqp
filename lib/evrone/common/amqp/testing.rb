@@ -7,38 +7,46 @@ module Evrone
 
         extend self
 
-        @@messages = []
-        @@exchange_messages = Hash.new { |h,k| h[k] = [] }
+        @@messages = Hash.new { |h,k| h[k] = [] }
+        @@messages_and_options = Hash.new { |h,k| h[k] = [] }
 
         def messages
           @@messages
         end
 
-        def exchange_messages
-          @@exchange_messages
+        def messages_and_options
+          @@messages_and_options
         end
 
         def clear
           messages.clear
-          exchange_messages.clear
+          messages_and_options.clear
         end
       end
 
       module Consumer::Publish
         alias_method :real_publish, :publish
 
-        def publish(message, options = {})
-          Testing.exchange_messages[exchange_name] << message
-          Testing.messages << message
+        def publish(message, options = nil)
+          options ||= {}
+          Testing.messages[exchange_name] << message
+          Testing.messages_and_options[exchange_name] << [message, options]
           self
         end
+
       end
 
       module Consumer
         module ClassMethods
+
           def messages
-            Testing.exchange_messages[exchange_name]
+            Testing.messages[exchange_name]
           end
+
+          def messages_and_options
+            Testing.messages_and_options[exchange_name]
+          end
+
         end
       end
     end
