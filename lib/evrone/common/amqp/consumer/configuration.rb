@@ -24,29 +24,38 @@ module Evrone
         end
 
         %w{ exchange queue }.each do |m|
-          define_method m do |*name|
+          define_method m do |*name, &b|
             options = name.last.is_a?(Hash) ? name.pop : {}
-            consumer_configuration.__send__(m).name    = name.first
+            val = b || name.first
+            consumer_configuration.__send__(m).name    = val
             consumer_configuration.__send__(m).options = options
           end
 
           define_method "#{m}_name" do
-            consumer_configuration.__send__(m).name || consumer_name
+            value_maybe_proc(consumer_configuration.__send__(m).name || consumer_name)
           end
 
           define_method "#{m}_options" do
-            consumer_configuration.__send__(m).options
+            value_maybe_proc(consumer_configuration.__send__(m).options)
           end
         end
 
-        def routing_key(name = nil)
-          consumer_configuration.routing_key = name if name
-          consumer_configuration.routing_key
+        def routing_key(name = nil, &block)
+          val = block || name
+          if val
+            consumer_configuration.routing_key = val
+          else
+            value_maybe_proc consumer_configuration.routing_key
+          end
         end
 
-        def headers(values = nil)
-          consumer_configuration.headers = values unless values == nil
-          consumer_configuration.headers
+        def headers(values = nil, &block)
+          val = block || values
+          if val
+            consumer_configuration.headers = val
+          else
+            value_maybe_proc consumer_configuration.headers
+          end
         end
 
         def model(value = nil)
@@ -79,6 +88,15 @@ module Evrone
         end
 
         private
+
+          def value_maybe_proc(val)
+            case val
+            when Proc
+              val.call
+            else
+              val
+            end
+          end
 
           def make_consumer_name
             to_s.scan(/[A-Z][a-z]*/).join("_")

@@ -68,12 +68,24 @@ describe Evrone::Common::AMQP::Consumer do
 
       context "set routing_key" do
         before { consumer_class.routing_key 'key' }
-        it { should eq({routing_key: 'key'}) }
+        it { should eq(routing_key: 'key') }
+      end
+
+      context "set routing_key by block" do
+        before do
+          consumer_class.routing_key { 'key.block' }
+        end
+        it { should eq(routing_key: 'key.block') }
       end
 
       context "set headers" do
         before { consumer_class.headers 'key' }
         it { should eq({headers: 'key'}) }
+      end
+
+      context "set headers by block" do
+        before { consumer_class.headers { 'key.block' } }
+        it { should eq(headers: 'key.block') }
       end
     end
 
@@ -101,6 +113,11 @@ describe Evrone::Common::AMQP::Consumer do
         consumer_class.exchange :foo
         expect(subject).to eq :foo
       end
+
+      it "when set by block should be" do
+        consumer_class.exchange { 'name.block' }
+        expect(subject).to eq 'name.block'
+      end
     end
 
     context "queue_name" do
@@ -112,6 +129,11 @@ describe Evrone::Common::AMQP::Consumer do
       it "when set name should be" do
         consumer_class.queue :bar
         expect(subject).to eq :bar
+      end
+
+      it "when set by block should be" do
+        consumer_class.queue { 'name.block' }
+        expect(subject).to eq 'name.block'
       end
     end
 
