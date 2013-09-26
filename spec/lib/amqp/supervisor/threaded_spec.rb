@@ -106,6 +106,7 @@ describe Evrone::Common::AMQP::Supervisor::Threaded, jruby: true do
           c.spawn_attempts = 1
         end
         th = supervisor.run_async
+        th.abort_on_exception = false
         timeout 10 do
           expect {
             th.join
