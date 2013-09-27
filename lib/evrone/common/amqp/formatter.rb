@@ -87,17 +87,13 @@ module Evrone
 
         define 'application/x-protobuf' do
 
-          pack do |body|
-            StringIO.open do |io|
-              body.serialize(io)
-              io.rewind
-              io.read
-            end
+          pack do |object|
+            object.encode
           end
 
           unpack do |payload, model|
             raise ModelDoesNotExists unless model
-            model.parse payload
+            model.decode payload
           end
 
           class ModelDoesNotExists < Exception ; end
