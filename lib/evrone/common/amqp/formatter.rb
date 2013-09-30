@@ -88,7 +88,7 @@ module Evrone
         define 'application/x-protobuf' do
 
           pack do |object|
-            object.encode
+            object.encode.to_s
           end
 
           unpack do |payload, model|
