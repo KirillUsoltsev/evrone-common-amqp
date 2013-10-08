@@ -15,7 +15,7 @@ module Evrone
       end
 
       autoload :Logger,         File.expand_path("../amqp/mixins/logger",          __FILE__)
-      autoload :WithMiddleware, File.expand_path("../amqp/mixins/with_middleware", __FILE__)
+      autoload :Callbacks,      File.expand_path("../amqp/mixins/callbacks",       __FILE__)
 
       extend self
 

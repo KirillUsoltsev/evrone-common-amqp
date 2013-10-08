@@ -35,7 +35,7 @@ module Evrone
           include Common::AMQP::Consumer::Publish
           include Common::AMQP::Consumer::Subscribe
           include Common::AMQP::Logger
-          include Common::AMQP::WithMiddleware
+          include Common::AMQP::Callbacks
 
           def shutdown?
             Common::AMQP.shutdown?

@@ -13,8 +13,8 @@ module Evrone
 
           x = declare_exchange
 
-          with_middleware :publishing, message: message, exchange: x do |opts|
-            m = serialize_message opts[:message], options[:content_type]
+          run_callbacks(:publish, message: message, exchange: x) do
+            m = serialize_message message, options[:content_type]
             x.publish m, options
           end
 
