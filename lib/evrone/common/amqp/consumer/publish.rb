@@ -13,7 +13,7 @@ module Evrone
 
           x = declare_exchange
 
-          run_callbacks(:publish, message: message, exchange: x) do
+          run_callbacks(:publish, message: message, exchange: x, name: consumer_name) do
             m = serialize_message message, options[:content_type]
             x.publish m, options
           end

@@ -10,7 +10,7 @@ module Evrone
             x = declare_exchange
             q = declare_queue
 
-            run_callbacks(:subscribe, exchange: x, queue: q) do
+            run_callbacks(:subscribe, exchange: x, queue: q, name: consumer_name) do
               debug "subscribing to #{q.name}:#{x.name} using #{bind_options.inspect}"
               q.bind(x, bind_options)
               debug "successfuly subscribed to #{q.name}:#{x.name}"
@@ -47,7 +47,7 @@ module Evrone
           def run_instance(delivery_info, properties, payload)
             payload = deserialize_message properties, payload
 
-            run_callbacks :recieve, payload: payload do
+            run_callbacks :recieve, payload: payload, name: consumer_name do
               new.tap do |inst|
                 inst.properties    = properties
                 inst.delivery_info = delivery_info
