@@ -29,15 +29,6 @@ module Evrone
           @@classes
         end
 
-        def consumer_name
-          @consumer_name ||= begin
-            id = Thread.current[:consumer_id]
-            name = self.class.consumer_name.dup
-            name << ".#{id}" if id
-            name
-          end
-        end
-
         module ClassMethods
 
           include Common::AMQP::Consumer::Configuration

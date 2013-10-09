@@ -30,17 +30,17 @@ describe Evrone::Common::AMQP::Consumer do
     subject { consumer_class }
 
     its(:config)        { should be_an_instance_of(Evrone::Common::AMQP::Config) }
+    its(:consumer_name) { should eq 'test_consumer' }
 
-    context "consumer_name" do
-      subject { consumer_class.consumer_name }
-      before { Thread.current[:consumer_name] = nil }
+    context "consumer_id" do
 
-      it { should eq 'test_consumer' }
-
-      context "when Thread.current has key :consumer_id" do
-        before { Thread.current[:consumer_id] = '99' }
-        after  { Thread.current[:consumer_id] = nil }
-        it { should eq 'test_consumer.99' }
+      it "should be success" do
+        expect(consumer_class.consumer_id).to eq 'test_consumer'
+        th = Thread.new do
+          Thread.current[:evrone_amqp_consumer_id] = '99'
+          consumer_class.consumer_id
+        end
+        expect(th.value).to eq 'test_consumer.99'
       end
     end
 

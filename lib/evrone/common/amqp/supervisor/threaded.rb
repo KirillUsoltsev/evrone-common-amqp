@@ -128,7 +128,7 @@ module Evrone
             attempt = 0 if reset_attempt?(task)
             task.dup.tap do |new_task|
               new_task.thread = Thread.new(new_task) do |t|
-                Thread.current[:consumer_id] = t.id
+                Thread.current[:evrone_amqp_consumer_id] = t.id
                 t.object.send t.method
               end
               new_task.thread.abort_on_exception = false

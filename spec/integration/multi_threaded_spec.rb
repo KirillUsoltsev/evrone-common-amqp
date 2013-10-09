@@ -52,10 +52,16 @@ describe "Run in multithread environment", slow: true, jruby: true do
     ths = (0..12).map do |i|
       klass = (i % 2 == 0) ? alice : bob
       Thread.new do
-        klass.subscribe
+        begin
+          klass.subscribe
+        rescue Exception => e
+          puts "ERROR: #{e.inspect}"
+          raise e
+        end
+      end.tap do |th|
+        th.abort_on_exception = true
       end
     end
-    ths.each{|t| t.abort_on_exception = true }
     sleep 0.5
 
     num_messages.times do |n|

@@ -29,7 +29,7 @@ describe Evrone::Common::AMQP::Supervisor::Threaded, jruby: true do
     let(:len)       { 1 }
     let(:runner)    {
       Proc.new do
-        id = Thread.current[:consumer_id]
+        id = Thread.current[:evrone_amqp_consumer_id]
         mutex.synchronize do
           collected.push id
         end
@@ -73,7 +73,7 @@ describe Evrone::Common::AMQP::Supervisor::Threaded, jruby: true do
       let(:runner) {
         Proc.new do
           sleep 0.1
-          id = Thread.current[:consumer_id]
+          id = Thread.current[:evrone_amqp_consumer_id]
           mutex.synchronize do
             collected.push id
           end
