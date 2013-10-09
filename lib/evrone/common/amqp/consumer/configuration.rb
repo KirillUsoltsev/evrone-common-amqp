@@ -99,10 +99,10 @@ module Evrone
           end
 
           def make_consumer_name
-            to_s.scan(/[A-Z][a-z]*/).join("_")
+            to_s.split("::")
+                .last
+                .scan(/[A-Z][a-z]*/).join("_")
                 .downcase
-                .gsub(/_/, '.')
-                .gsub(/\.consumer$/, '')
           end
 
       end

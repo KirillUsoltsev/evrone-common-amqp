@@ -29,8 +29,22 @@ describe Evrone::Common::AMQP::Consumer do
 
     subject { consumer_class }
 
-    its(:consumer_name) { should eq 'evrone.test' }
     its(:config)        { should be_an_instance_of(Evrone::Common::AMQP::Config) }
+    its(:consumer_name) { should eq 'test_consumer' }
+
+    context "instance consumer_name" do
+      subject { consumer.consumer_name }
+
+      it { should eq 'test_consumer' }
+
+      context "when Thread.current has key :consumer_id" do
+        before do
+          mock(Thread.current).[](:consumer_id){ '99' }
+        end
+        it { should eq 'test_consumer.99' }
+      end
+    end
+
 
     context "model" do
       subject { consumer_class.model }
