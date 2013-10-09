@@ -26,6 +26,10 @@ module Evrone
           end
         end
 
+        def on_error(&block)
+          callbacks[:on_error] = block
+        end
+
         def default_exchange_name
           "amq.#{default_exchange_type}"
         end

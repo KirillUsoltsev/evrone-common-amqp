@@ -6,6 +6,7 @@ module Evrone
       class Supervisor::Threaded
 
         include Common::AMQP::Logger
+        include Common::AMQP::Callbacks
 
         POOL_INTERVAL = 0.5
 
@@ -148,6 +149,7 @@ module Evrone
             rescue Exception => e
               STDERR.puts "#{e.inspect} in #{task.inspect}"
               STDERR.puts e.backtrace.join("\n")
+              run_on_error_callback(e)
               e
             end
           end

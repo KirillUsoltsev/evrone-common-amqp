@@ -17,5 +17,16 @@ describe Evrone::Common::AMQP::Config do
         end
       end
     end
+
+    context "on_error" do
+      it "should be success" do
+        config.on_error do |e|
+          e
+        end
+        val = config.callbacks[:on_error].call "value"
+        expect(val).to eq 'value'
+      end
+    end
   end
+
 end

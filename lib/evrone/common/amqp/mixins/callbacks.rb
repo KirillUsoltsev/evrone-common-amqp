@@ -19,6 +19,16 @@ module Evrone
           rs
         end
 
+        def run_on_error_callback(e)
+          if f = Common::AMQP.config.callbacks[:on_error]
+            begin
+              f.call e
+            rescue Exception => e
+              $stderr.puts "ERROR on error callback: #{e.inspect}"
+            end
+          end
+        end
+
       end
     end
   end
