@@ -74,7 +74,12 @@ module Evrone
         end
 
         def consumer_name
-          consumer_configuration.consumer_name
+          Thread.current[:consumer_name] ||= begin
+            id   = Thread.current[:consumer_id]
+            name = consumer_configuration.consumer_name.dup
+            name << ".#{id}" if id
+            name
+          end
         end
 
         def bind_options
