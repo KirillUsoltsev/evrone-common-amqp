@@ -38,7 +38,7 @@ module Evrone
           def build(tasks)
             supervisor = new
             tasks.each_pair do |k,v|
-              v.times do |n|
+              v.to_i.times do |n|
                 supervisor.add k, :subscribe, n
               end
             end
